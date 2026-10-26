@@ -579,6 +579,12 @@ function ReviewPageContent() {
             </div>
 
             <div className="flex items-center gap-2">
+              <Link
+                href={`/project/${projectId}/screener`}
+                className="rounded-lg border border-slate-900 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
+              >
+                + Edit / Add Questions
+              </Link>
               <button
                 type="button"
                 onClick={() => setSimulatorOpen(true)}

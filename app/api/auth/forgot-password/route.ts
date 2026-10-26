@@ -65,7 +65,7 @@ export async function POST(
 
     const appUrl =
       process.env.APP_URL ||
-      "http://localhost:3000";
+      "https://gms-product.vercel.app/0";
 
     const resetUrl =
       `${appUrl}/auth/reset-password?token=${resetToken}`;

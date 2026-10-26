@@ -24,6 +24,16 @@ type Project = {
   };
 };
 
+type PricingTier = {
+  name: string;
+  badge: string;
+  cpi: number;
+  total: number;
+  deliveryDays: number;
+  description: string;
+  recommended?: boolean;
+};
+
 type Quote = {
   id?: string;
   baseCpi: number;
@@ -39,6 +49,7 @@ type Quote = {
   currency: string;
   urgency: string;
   qualityTier: string;
+  tiers?: PricingTier[];
   expiresAt?: string;
 };
 
@@ -680,6 +691,51 @@ function PriceEngineContent() {
                       </div>
                     </div>
 
+                    {/* Multi-Tier Packages */}
+                    {quote.tiers && quote.tiers.length > 0 && (
+                      <div className="mt-6 border-t pt-5">
+                        <h3 className="mb-3 text-sm font-semibold text-slate-900">
+                          PureSpectrum™ Marketplace Packages
+                        </h3>
+                        <div className="space-y-2">
+                          {quote.tiers.map((tier, idx) => (
+                            <div
+                              key={idx}
+                              className={`rounded-xl border p-3 text-xs transition ${
+                                tier.recommended
+                                  ? "border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-950/20"
+                                  : "border-slate-200 bg-slate-50"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-semibold text-slate-900">
+                                  {tier.name}
+                                </span>
+                                <span
+                                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                    tier.recommended
+                                      ? "bg-emerald-600 text-white"
+                                      : "bg-slate-200 text-slate-700"
+                                  }`}
+                                >
+                                  {tier.badge}
+                                </span>
+                              </div>
+                              <p className="mt-1 text-[11px] text-slate-500">{tier.description}</p>
+                              <div className="mt-2 flex items-baseline justify-between border-t border-slate-200/60 pt-2 font-medium">
+                                <span className="text-slate-600">
+                                  CPI: {money(tier.cpi, quote.currency)}
+                                </span>
+                                <span className="font-bold text-slate-900">
+                                  {money(tier.total, quote.currency)} (~{tier.deliveryDays}d)
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {quote.expiresAt && (
                       <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
                         Quote valid until{" "}
@@ -692,12 +748,12 @@ function PriceEngineContent() {
                     <button
                       onClick={() =>
                         router.push(
-                          `/project/${projectId}/survey-setup`
+                          `/project/${projectId}/screener`
                         )
                       }
-                      className="mt-5 w-full rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700"
+                      className="mt-5 w-full rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
                     >
-                      Continue to Survey Steup
+                      Continue to Screener Questions →
                     </button>
                   </>
                 ) : (

@@ -29,6 +29,9 @@ export async function POST(
     const email =
       body.email?.trim().toLowerCase();
     const password = body.password;
+    const rawRole = body.role?.trim().toLowerCase();
+    const allowedRoles = ["client", "supplier", "respondent", "user", "admin"];
+    const role = allowedRoles.includes(rawRole) ? rawRole : "client";
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -100,6 +103,7 @@ export async function POST(
       name,
       email,
       password: hashedPassword,
+      role,
 
       emailVerified: false,
 
@@ -109,7 +113,7 @@ export async function POST(
       emailVerificationExpires:
         new Date(
           Date.now() +
-            30 * 60 * 1000
+          30 * 60 * 1000
         ),
 
       isBlocked: false,
@@ -117,7 +121,7 @@ export async function POST(
 
     const appUrl =
       process.env.APP_URL ||
-      "http://localhost:3000";
+      "https://gms-product.vercel.app/";
 
     const verificationUrl =
       `${appUrl}/auth/verify-email?token=${verificationToken}`;
@@ -137,6 +141,7 @@ export async function POST(
           id: user._id,
           name: user.name,
           email: user.email,
+          role: user.role,
         },
       },
       { status: 201 }

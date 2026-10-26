@@ -23,7 +23,7 @@ export function LogoutButton({ className }: { className?: string }) {
       disabled={loading}
       className={
         className ??
-        "inline-flex items-center gap-2 rounded-lg border border-zinc-200 px-3.5 py-2 text-sm font-medium text-zinc-900 outline-none transition hover:bg-zinc-100 focus-visible:ring-4 focus-visible:ring-zinc-900/10 disabled:opacity-60 dark:border-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-900"
+        "inline-flex items-center gap-2 rounded-lg border border-zinc-200 px-3.5 py-2 text-sm font-medium text-white outline-none transition hover:bg-zinc-100 hover:text-black  focus-visible:ring-4 focus-visible:ring-zinc-900/10 disabled:opacity-60 dark:border-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-900"
       }
     >
       {loading && <Spinner />}

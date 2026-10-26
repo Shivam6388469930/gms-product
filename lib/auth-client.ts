@@ -54,7 +54,7 @@ export function logout() {
 // Authenticated JSON request with automatic token refresh. Used by the app pages.
 export async function apiJSON<T = Record<string, unknown>>(
   url: string,
-  method: "GET" | "POST" | "PATCH" | "DELETE" = "GET",
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" = "GET",
   body?: unknown
 ): Promise<{ ok: boolean; status: number; data: { success?: boolean; message?: string } & T }> {
   try {

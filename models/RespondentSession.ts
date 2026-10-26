@@ -14,11 +14,26 @@ export interface IRespondentSession extends Document {
   supplierCode: string;
   ip: string;
   userAgent: string;
-  status: "screened_out" | "qualified" | "completed" | "blocked_duplicate_ip";
+  status:
+    | "screened_out"
+    | "qualified"
+    | "completed"
+    | "blocked_duplicate_ip"
+    | "blocked_exclusion"
+    | "blocked_fingerprint"
+    | "quota_full"
+    | "quality_reject";
   passedScreener: boolean;
   screenerAnswers: IScreenerAnswer[];
   terminatedReason: string;
   targetSurveyUrl?: string;
+  deviceFingerprint?: string;
+  fraudScore?: number;
+  crossProjectDuplicate?: boolean;
+  country?: string;
+  startedAt?: Date;
+  completedAt?: Date;
+  durationSeconds?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -65,7 +80,16 @@ const RespondentSessionSchema = new Schema<IRespondentSession>(
     },
     status: {
       type: String,
-      enum: ["screened_out", "qualified", "completed", "blocked_duplicate_ip"],
+      enum: [
+        "screened_out",
+        "qualified",
+        "completed",
+        "blocked_duplicate_ip",
+        "blocked_exclusion",
+        "blocked_fingerprint",
+        "quota_full",
+        "quality_reject",
+      ],
       required: true,
       index: true,
     },
@@ -86,6 +110,38 @@ const RespondentSessionSchema = new Schema<IRespondentSession>(
       type: String,
       default: "",
       trim: true,
+    },
+    deviceFingerprint: {
+      type: String,
+      default: "",
+      trim: true,
+      index: true,
+    },
+    fraudScore: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
+    crossProjectDuplicate: {
+      type: Boolean,
+      default: false,
+    },
+    country: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    startedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    completedAt: {
+      type: Date,
+    },
+    durationSeconds: {
+      type: Number,
+      default: 0,
     },
   },
   {

@@ -227,6 +227,9 @@ export async function POST(
           assumptions:
             pricing.assumptions,
 
+          tiers:
+            pricing.tiers,
+
           expiresAt,
         },
       },

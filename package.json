@@ -10,9 +10,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.3.4",
     "@google/genai": "^2.29.1",
+    "antd": "^6.6.8",
     "dotenv": "^18.0.7",
     "jsonwebtoken": "^9.0.3",
+    "lucide-react": "^1.61.0",
     "mongoose": "^9.11.2",
     "next": "16.4.0",
     "nodemailer": "^10.1.0",

@@ -141,6 +141,21 @@ const PriceQuoteSchema = new Schema(
       default: "active",
     },
 
+    tiers: {
+      type: [
+        {
+          name: String,
+          badge: String,
+          cpi: Number,
+          total: Number,
+          deliveryDays: Number,
+          description: String,
+          recommended: Boolean,
+        },
+      ],
+      default: [],
+    },
+
     expiresAt: {
       type: Date,
     },

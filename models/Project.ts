@@ -58,6 +58,35 @@ const SurveySetupSchema = new Schema(
 );
 
 /* =========================================================
+   SOFT LAUNCH
+========================================================= */
+
+const SoftLaunchSchema = new Schema(
+  {
+    enabled: {
+      type: Boolean,
+      default: false,
+    },
+    threshold: {
+      type: Number,
+      default: 10,
+      min: 1,
+      max: 10000,
+    },
+    autopaused: {
+      type: Boolean,
+      default: false,
+    },
+    autopausedAt: {
+      type: Date,
+    },
+  },
+  {
+    _id: false,
+  }
+);
+
+/* =========================================================
    SCREENER
 ========================================================= */
 
@@ -343,6 +372,24 @@ const ProjectSchema = new Schema(
     },
 
     /* =======================================================
+       QUOTAS MANAGEMENT
+    ======================================================= */
+
+    quotas: {
+      type: [Schema.Types.Mixed],
+      default: [],
+    },
+
+    overquotaConfig: {
+      type: Schema.Types.Mixed,
+      default: () => ({
+        bufferPercent: 5,
+        action: "terminate",
+        redirectUrl: "",
+      }),
+    },
+
+    /* =======================================================
        SURVEY SETUP
     ======================================================= */
 
@@ -366,6 +413,63 @@ const ProjectSchema = new Schema(
         strictIpTermination: true,
         questions: [],
       }),
+
+    /* =======================================================
+       SOFT LAUNCH
+    ======================================================= */
+
+    softLaunch: {
+      type: SoftLaunchSchema,
+      default: () => ({
+        enabled: false,
+        threshold: 10,
+        autopaused: false,
+      }),
+    },
+
+    /* =======================================================
+       EXCLUSION LIST
+    ======================================================= */
+
+    exclusionList: {
+      type: [String],
+      default: [],
+    },
+
+    /* =======================================================
+       WEBHOOKS
+    ======================================================= */
+
+    webhooks: {
+      type: [{
+        event: {
+          type: String,
+          enum: [
+            "respondent.complete",
+            "respondent.screenout",
+            "respondent.quota_full",
+            "project.complete",
+            "project.soft_launch_paused",
+          ],
+          required: true,
+        },
+        url: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        secret: {
+          type: String,
+          default: "",
+          trim: true,
+        },
+        active: {
+          type: Boolean,
+          default: true,
+        },
+      }],
+      default: [],
+    },
     },
 
     /* =======================================================

@@ -650,7 +650,7 @@ function SurveySetupContent() {
                   }
                   placeholder="https://example.com/survey"
                   disabled={!isDraft}
-                  className="input"
+                  className="input text-black"
                 />
               </Field>
 
@@ -720,7 +720,7 @@ function SurveySetupContent() {
                   }
                   placeholder="https://example.com/qualified"
                   disabled={!isDraft}
-                  className="input"
+                  className="input text-black"
                 />
               </Field>
 
@@ -741,7 +741,7 @@ function SurveySetupContent() {
                   }
                   placeholder="https://example.com/terminated"
                   disabled={!isDraft}
-                  className="input"
+                  className="input text-black"
                 />
               </Field>
 
@@ -760,7 +760,7 @@ function SurveySetupContent() {
                   }
                   placeholder="https://example.com/complete"
                   disabled={!isDraft}
-                  className="input"
+                  className="input text-black"
                 />
               </Field>
             </div>

@@ -323,8 +323,13 @@ export default function NewProjectPage() {
   const router = useRouter();
 
   /* =======================================================
-     BASIC PROJECT
+     CINT MODE & BASIC PROJECT
   ======================================================= */
+
+  const [mode, setMode] = useState<"cint" | "advanced">("cint");
+  const [projectName, setProjectName] = useState("Template_Genpop");
+  const [projectManager, setProjectManager] = useState("Ratan Bhan");
+  const [fieldingAssistant, setFieldingAssistant] = useState(true);
 
   const [surveyTitle, setSurveyTitle] = useState("");
 
@@ -564,11 +569,11 @@ export default function NewProjectPage() {
     const trimmedTitle = surveyTitle.trim();
 
     const trimmedDescription =
-      audienceDescription.trim();
+      audienceDescription.trim() || `${projectName} - Cint Target Screener Study managed by ${projectManager}`;
 
     const n = Number(sampleSize);
-    const l = Number(loi);
-    const r = Number(ir);
+    const l = Number(loi) || 10;
+    const r = Number(ir) || 35;
 
     /* =====================================================
        BASIC VALIDATION
@@ -576,7 +581,7 @@ export default function NewProjectPage() {
 
     if (trimmedTitle.length < 2) {
       setError(
-        "Survey title must be at least 2 characters."
+        "Survey name must be at least 2 characters."
       );
       return;
     }
@@ -595,13 +600,6 @@ export default function NewProjectPage() {
 
     if (!audienceType) {
       setError("Please select an audience.");
-      return;
-    }
-
-    if (trimmedDescription.length > 500) {
-      setError(
-        "Audience description cannot exceed 500 characters."
-      );
       return;
     }
 
@@ -875,46 +873,214 @@ export default function NewProjectPage() {
 
   return (
     <>
-      {/* =====================================================
-          BACK
-      ===================================================== */}
-
-      <Link
-        href="/project"
-        className="
-          text-sm
-          text-zinc-500
-          hover:text-zinc-900
-          dark:text-zinc-400
-          dark:hover:text-zinc-50
-        "
-      >
-        ← Surveys
-      </Link>
-
-      {/* =====================================================
-          TITLE
-      ===================================================== */}
-
-      <h1 className="mb-8 mt-3 text-2xl font-semibold tracking-tight">
-        New survey
-      </h1>
-
-      {/* =====================================================
-          MAIN GRID
-      ===================================================== */}
-
-      <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
-
-        {/* ===================================================
-            FORM
-        =================================================== */}
-
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-8"
-          noValidate
+      {/* Top Bar Switcher between Cint Quick Mode and Advanced Targeting */}
+      <div className="flex items-center justify-between mb-6">
+        <Link
+          href="/project"
+          className="text-xs text-zinc-400 hover:text-white transition flex items-center gap-1.5"
         >
+          ← Back to Surveys
+        </Link>
+
+        <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 p-1 rounded-xl text-xs">
+          <button
+            type="button"
+            onClick={() => setMode("cint")}
+            className={`px-3 py-1.5 rounded-lg transition font-medium ${
+              mode === "cint"
+                ? "bg-[#642582] text-white shadow-sm"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            Cint Quick Screener
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("advanced")}
+            className={`px-3 py-1.5 rounded-lg transition font-medium ${
+              mode === "advanced"
+                ? "bg-zinc-800 text-white shadow-sm"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            Advanced Full Builder
+          </button>
+        </div>
+      </div>
+
+      {mode === "cint" ? (
+        <div className="max-w-xl mx-auto py-4">
+          <h1 className="text-2xl font-bold tracking-tight text-white text-center mb-6">
+            Create Target Screener Survey
+          </h1>
+
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/90 p-7 sm:p-8 shadow-2xl space-y-5 text-left">
+            <ErrorAlert message={error} />
+
+            <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+              {/* Name* */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-300">
+                  Name<span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. TRN-SW-22297 || Females - MX 2"
+                  value={surveyTitle}
+                  onChange={(e) => setSurveyTitle(e.target.value)}
+                  disabled={saving}
+                  className="w-full rounded-lg bg-zinc-950 border border-zinc-700/80 px-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                />
+              </div>
+
+              {/* Project* */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-300">
+                  Project<span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    placeholder="Search for a project or create a new one"
+                    value={projectName}
+                    onChange={(e) => setProjectName(e.target.value)}
+                    disabled={saving}
+                    className="w-full rounded-lg bg-zinc-950 border border-zinc-700/80 px-3.5 py-2 pr-9 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none">
+                    🔍
+                  </div>
+                </div>
+              </div>
+
+              {/* Project Manager */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-300">
+                  Project Manager
+                </label>
+                <select
+                  value={projectManager}
+                  onChange={(e) => setProjectManager(e.target.value)}
+                  disabled={saving}
+                  className="w-full rounded-lg bg-zinc-950 border border-zinc-700/80 px-3.5 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                >
+                  <option value="Ratan Bhan">Ratan Bhan</option>
+                  <option value="Client Admin">Client Admin</option>
+                  <option value="Operations Lead">Operations Lead</option>
+                </select>
+              </div>
+
+              {/* Number of Completes* */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-300">
+                  Number of Completes<span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min={10}
+                  max={100000}
+                  required
+                  value={sampleSize}
+                  onChange={(e) => setSampleSize(e.target.value)}
+                  disabled={saving}
+                  className="w-full rounded-lg bg-zinc-950 border border-zinc-700/80 px-3.5 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-purple-500 font-mono"
+                />
+              </div>
+
+              {/* Country - Language* */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-300">
+                  Country - Language<span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  disabled={saving}
+                  className="w-full rounded-lg bg-zinc-950 border border-zinc-700/80 px-3.5 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                >
+                  {COUNTRIES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.name} - English
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Target Audience */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-300">
+                  Target Audience
+                </label>
+                <select
+                  value={audienceType}
+                  onChange={(e) => setAudienceType(e.target.value as any)}
+                  disabled={saving}
+                  className="w-full rounded-lg bg-zinc-950 border border-zinc-700/80 px-3.5 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                >
+                  <option value="consumer">Consumer (General Population)</option>
+                  <option value="b2b">B2B Business Decision Makers</option>
+                  <option value="healthcare">Healthcare & Medical Professionals</option>
+                </select>
+              </div>
+
+              {/* Fielding Assistant */}
+              <div className="pt-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-white">
+                      <span>⚙️</span>
+                      <span>Fielding Assistant</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 leading-relaxed">
+                      Reduce manual adjustments and optimize the fielding process. Settings will automatically adjust to ensure your survey completes successfully.{" "}
+                      <span className="text-purple-400 hover:underline cursor-pointer">Learn More</span>
+                    </p>
+                  </div>
+
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
+                    <input
+                      type="checkbox"
+                      checked={fieldingAssistant}
+                      onChange={(e) => setFieldingAssistant(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-10 h-5 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#642582]" />
+                  </label>
+                </div>
+              </div>
+
+              {/* Submit CTA (Purple Cint Button) */}
+              <button
+                type="submit"
+                disabled={saving}
+                className="w-full mt-4 py-2.5 rounded-lg bg-[#642582] hover:bg-[#7b2c9f] text-white text-xs font-semibold shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {saving ? "Creating Survey & Initializing Quotas..." : "Create Survey"}
+              </button>
+
+              <div className="text-center pt-2">
+                <span className="text-[11px] text-zinc-500">
+                  Looking for more information on how to create a survey? Check out our{" "}
+                  <span className="text-purple-400 hover:underline cursor-pointer">support documentation</span>.
+                </span>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : (
+        <>
+          <h1 className="mb-8 mt-3 text-2xl font-semibold tracking-tight text-white">
+            Advanced Survey Builder
+          </h1>
+
+          <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-8"
+              noValidate
+            >
 
           {/* =================================================
               BASIC INFORMATION
@@ -922,7 +1088,7 @@ export default function NewProjectPage() {
 
           <section className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
             <div className="mb-5">
-              <h2 className="text-lg font-semibold">
+              <h2 className="text-lg text-black font-semibold">
                 Basic Information
               </h2>
 
@@ -1011,7 +1177,7 @@ export default function NewProjectPage() {
           <section className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
 
             <div className="mb-5">
-              <h2 className="text-lg font-semibold">
+              <h2 className="text-lg text-black font-semibold">
                 Sample & Feasibility
               </h2>
 
@@ -1068,7 +1234,7 @@ export default function NewProjectPage() {
           <section className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
 
             <div className="mb-5">
-              <h2 className="text-lg font-semibold">
+              <h2 className="text-lg text-black font-semibold">
                 Demographic Targeting
               </h2>
 
@@ -1193,7 +1359,7 @@ export default function NewProjectPage() {
           <section className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
 
             <div className="mb-5">
-              <h2 className="text-lg font-semibold">
+              <h2 className="text-lg text-black font-semibold">
                 Geographic Targeting
               </h2>
 
@@ -1320,7 +1486,7 @@ export default function NewProjectPage() {
             <div className="mb-5 flex items-start justify-between gap-4">
 
               <div>
-                <h2 className="text-lg font-semibold">
+                <h2 className="text-lg text-black font-semibold">
                   Advanced Targeting
                 </h2>
 
@@ -1473,7 +1639,7 @@ export default function NewProjectPage() {
           <section className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
 
             <div className="mb-5">
-              <h2 className="text-lg font-semibold">
+              <h2 className="text-lg text-black font-semibold">
                 Quota Nesting
               </h2>
 
@@ -1552,6 +1718,8 @@ export default function NewProjectPage() {
         </div>
 
       </div>
+        </>
+      )}
     </>
   );
 }

@@ -106,14 +106,22 @@ export default function LandingPage() {
               className="h-9 w-32 rounded-lg object-cover" />
             <span className="text-[15px] font-semibold tracking-tight">Global Matrix Survey</span>
           </Link>
-          <nav className="hidden items-center gap-8 text-sm md:flex">
-            {[["Platform", "#platform"], ["Quality", "#quality"], ["Integration", "#integration"]].map(
-              ([label, href]) => (
-                <a key={href} href={href} className={`${muted} transition hover:text-zinc-900 dark:hover:text-zinc-50`}>
-                  {label}
-                </a>
-              )
-            )}
+          <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
+            <a href="#platform" className={`${muted} transition hover:text-zinc-900 dark:hover:text-zinc-50`}>
+              Platform
+            </a>
+            <Link href="/project" className="text-zinc-600 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-white transition">
+              Client App
+            </Link>
+            <Link href="/admin" className="text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 font-semibold transition">
+              Admin
+            </Link>
+            <Link href="/supplier/dashboard" className="text-violet-600 hover:text-violet-500 dark:text-violet-400 font-semibold transition">
+              Supplier
+            </Link>
+            <Link href="/respondent/dashboard" className="text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 font-semibold transition">
+              Respondent
+            </Link>
           </nav>
           <div className="flex items-center gap-2">
             <Link href="/auth/login" className="rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-zinc-100 dark:hover:bg-zinc-900">
@@ -178,6 +186,129 @@ export default function LandingPage() {
             <span className={muted}>Pause · Resume · Stop</span>
             <span className="font-medium">CPI and spend tracked live</span>
           </div>
+        </div>
+      </section>
+
+      {/* Platform Portals Showcase */}
+      <section className="mx-auto max-w-6xl px-6 pb-16">
+        <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-indigo-500 mb-1">
+              Multi-Role Platform Architecture
+            </div>
+            <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-3xl">
+              Four Specialized Portals. One Integrated Network.
+            </h2>
+          </div>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-md">
+            Instantly switch between administrator operations, client researcher tooling, partner supplier routing, and panelist survey rewards.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Portal 1: Client DIY App */}
+          <Link
+            href="/dashboard"
+            className="group relative flex flex-col justify-between rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:border-indigo-500/50 hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 font-bold">
+                  ⚡
+                </div>
+                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                  Live
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-zinc-900 dark:text-white group-hover:text-indigo-500 transition-colors">
+                Client DIY Workspace
+              </h3>
+              <p className="mt-2 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                Audience targeting, automated feasibility, dynamic CPI pricing, screener setup, and real-time fieldwork telemetry.
+              </p>
+            </div>
+            <div className="mt-6 flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+              Launch Client App →
+            </div>
+          </Link>
+
+          {/* Portal 2: Admin Console */}
+          <Link
+            href="/admin"
+            className="group relative flex flex-col justify-between rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:border-violet-500/50 hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400 font-bold">
+                  🛡️
+                </div>
+                <span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-[11px] font-semibold text-violet-600 dark:text-violet-400">
+                  Control
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-zinc-900 dark:text-white group-hover:text-violet-500 transition-colors">
+                Admin Command Center
+              </h3>
+              <p className="mt-2 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                User governance, multi-supplier performance scoring, RBAC matrix, audit compliance trails, and system config.
+              </p>
+            </div>
+            <div className="mt-6 flex items-center gap-1.5 text-xs font-semibold text-violet-600 dark:text-violet-400">
+              Open Admin Console →
+            </div>
+          </Link>
+
+          {/* Portal 3: Supplier Hub */}
+          <Link
+            href="/supplier/dashboard"
+            className="group relative flex flex-col justify-between rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:border-cyan-500/50 hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-600 dark:bg-cyan-500/20 dark:text-cyan-400 font-bold">
+                  🌐
+                </div>
+                <span className="rounded-full bg-cyan-500/10 px-2 py-0.5 text-[11px] font-semibold text-cyan-600 dark:text-cyan-400">
+                  Supply API
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-zinc-900 dark:text-white group-hover:text-cyan-500 transition-colors">
+                Supplier Partner Hub
+              </h3>
+              <p className="mt-2 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                Incoming project invitations, real-time quota delivery, postback webhooks, fraud detection, and monthly revenue reconciliation.
+              </p>
+            </div>
+            <div className="mt-6 flex items-center gap-1.5 text-xs font-semibold text-cyan-600 dark:text-cyan-400">
+              Access Supplier Hub →
+            </div>
+          </Link>
+
+          {/* Portal 4: Respondent Portal */}
+          <Link
+            href="/respondent/dashboard"
+            className="group relative flex flex-col justify-between rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-500/50 hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 font-bold">
+                  🎁
+                </div>
+                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                  Panelist
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-zinc-900 dark:text-white group-hover:text-emerald-500 transition-colors">
+                Respondent Panelist App
+              </h3>
+              <p className="mt-2 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                Profile-matched questionnaires, live survey taking, wallet balances, streak bonuses, and instant gift card / PayPal redemptions.
+              </p>
+            </div>
+            <div className="mt-6 flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+              Enter Respondent App →
+            </div>
+          </Link>
         </div>
       </section>
 

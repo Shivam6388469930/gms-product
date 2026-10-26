@@ -30,7 +30,7 @@ export function EstimateCard({ estimate, loading }: { estimate: Estimate | null;
       className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900"
     >
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold">Feasibility &amp; quote</h2>
+        <h2 className="text-sm text-black font-semibold">Feasibility &amp; quote</h2>
         {estimate?.status && (
           <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusStyle[estimate.status]}`}>
             {statusLabel[estimate.status]}

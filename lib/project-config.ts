@@ -494,6 +494,8 @@ export type Estimate = {
   cpiMax: number;
   totalMin: number;
   totalMax: number;
+  estimatedCpi?: number;
+  estimatedTotalCost?: number;
 
   /* FIELD TIME */
   fieldTimeDays: number;
@@ -601,6 +603,34 @@ export type ProjectDTO = {
 
   /* SURVEY SETUP */
   surveySetup: SurveySetup;
+
+  /* ADVANCED FEATURES (PureSpectrum / Cint Parity) */
+  screener?: {
+    enabled: boolean;
+    blockDuplicateIp?: boolean;
+    strictIpTermination?: boolean;
+    questions?: Array<{
+      id: string;
+      questionText: string;
+      category?: string;
+      type?: string;
+      options: Array<{ id: string; label: string; isQualifying: boolean }>;
+      terminationReason?: string;
+    }>;
+  };
+  softLaunch?: {
+    enabled: boolean;
+    threshold: number;
+    autopaused?: boolean;
+    autopausedAt?: string;
+  };
+  exclusionList?: string[];
+  webhooks?: Array<{
+    event: string;
+    url: string;
+    secret?: string;
+    active?: boolean;
+  }>;
 
   /* TIMESTAMPS */
   createdAt: string;

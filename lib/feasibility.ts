@@ -428,7 +428,7 @@ export async function estimateProject(
   const steps = [
     `Panel capacity: ${fmt(supply.members)} registered respondents in ${country}` +
       (supply.usingDefaults
-        ? " (PureSpectrum/Cint exchange benchmark network)"
+        ? " (GMS exchange benchmark network)"
         : ` across ${supply.sources} connected supplier(s)`),
     `Effective IR: ${effectiveIr.toFixed(1)}% (Base IR ${ir}% × demographic penetration ${(demoPenetration.incidenceMultiplier * 100).toFixed(0)}%) = ${fmt(available)} qualified pool`,
     `Velocity: ${fmt(completesPerDay)} completes/day based on ${(supply.startRate * 100).toFixed(0)}% start rate and ${(completionRate * 100).toFixed(0)}% LOI completion rate` +

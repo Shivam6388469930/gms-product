@@ -79,7 +79,7 @@ function AppLayoutContent({
               className="flex items-center gap-2.5 group"
             >
               <span className="text-xl font-bold tracking-tight text-[#ff2e93] font-sans flex items-center gap-1.5 group-hover:opacity-90 transition">
-                Cint
+                GMS
 
                 <span className="text-[10px] text-zinc-300 font-normal tracking-wide px-1.5 py-0.5 rounded bg-white/10 border border-white/15">
                   GMS Studio
@@ -429,7 +429,7 @@ function AppLayoutContent({
 
             <button
               type="button"
-              title="Cint Applications"
+              title="GMS Applications"
               className="hidden md:flex h-8 w-8 items-center justify-center rounded-full text-zinc-300 hover:text-white hover:bg-white/10 transition"
             >
               <Grid size={17} />

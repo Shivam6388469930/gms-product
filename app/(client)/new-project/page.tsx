@@ -326,7 +326,7 @@ export default function NewProjectPage() {
      CINT MODE & BASIC PROJECT
   ======================================================= */
 
-  const [mode, setMode] = useState<"cint" | "advanced">("cint");
+  const [mode, setMode] = useState<"cint" | "advanced">("advanced");
   const [projectName, setProjectName] = useState("Template_Genpop");
   const [projectManager, setProjectManager] = useState("Ratan Bhan");
   const [fieldingAssistant, setFieldingAssistant] = useState(true);
@@ -883,7 +883,7 @@ export default function NewProjectPage() {
         </Link>
 
         <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 p-1 rounded-xl text-xs">
-          <button
+          {/* <button
             type="button"
             onClick={() => setMode("cint")}
             className={`px-3 py-1.5 rounded-lg transition font-medium ${
@@ -893,7 +893,7 @@ export default function NewProjectPage() {
             }`}
           >
             Cint Quick Screener
-          </button>
+          </button> */}
           <button
             type="button"
             onClick={() => setMode("advanced")}

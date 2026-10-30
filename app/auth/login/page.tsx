@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+
 import { AuthShell } from "@/components/AuthShell";
 import {
   ErrorAlert,
@@ -11,6 +12,8 @@ import {
   SubmitButton,
   linkClass,
 } from "@/components/Ui";
+
+import { postJSON } from "@/lib/auth-client";
 
 export default function LoginPage() {
   return (
@@ -35,6 +38,7 @@ export default function LoginPage() {
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+
   const returnUrl = searchParams.get("returnUrl");
 
   const [email, setEmail] = useState("");
@@ -42,52 +46,10 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  /*
-   * IMPORTANT:
-   * When browser restores this page from bfcache after logout,
-   * React state can still contain loading=true.
-   *
-   * pageshow fires when the page is loaded OR restored from cache.
-   * Reset loading whenever that happens.
-   */
-  useEffect(() => {
-    const handlePageShow = () => {
-      setLoading(false);
-    };
-
-    window.addEventListener("pageshow", handlePageShow);
-
-    return () => {
-      window.removeEventListener("pageshow", handlePageShow);
-    };
-  }, []);
-
-  /*
-   * Also reset loading when the tab becomes visible again.
-   * This gives an additional safeguard for browser navigation/cache behavior.
-   */
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        setLoading(false);
-      }
-    };
-
-    document.addEventListener(
-      "visibilitychange",
-      handleVisibilityChange
-    );
-
-    return () => {
-      document.removeEventListener(
-        "visibilitychange",
-        handleVisibilityChange
-      );
-    };
-  }, []);
-
   function getRedirectForRole(role?: string): string {
-    if (returnUrl) return returnUrl;
+    if (returnUrl) {
+      return returnUrl;
+    }
 
     switch (role?.toLowerCase()) {
       case "admin":
@@ -112,7 +74,10 @@ function LoginForm() {
   ) {
     e.preventDefault();
 
-    if (loading) return;
+    // Prevent double-click / duplicate login requests.
+    if (loading) {
+      return;
+    }
 
     setError("");
     setLoading(true);
@@ -146,8 +111,9 @@ function LoginForm() {
         user?.role
       );
 
+      // Navigate away after successful login.
+      // Do not reset loading here because the page is leaving.
       router.replace(destination);
-      router.refresh();
     } catch (error) {
       console.error("LOGIN_ERROR:", error);
 

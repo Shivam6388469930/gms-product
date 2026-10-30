@@ -52,8 +52,18 @@ const navSections: MenuGroup[] = [
       { key: "dashboard", label: "Dashboard", href: "/admin", icon: LayoutDashboard },
       { key: "users", label: "User", href: "/admin/users", icon: Users },
       { key: "suppliers", label: "Suppliers", href: "/admin/suppliers", icon: Truck },
-       { key: "respondents-manage", label: "Respondents Management", href: "/admin/respondents/manage", icon: UserCheck },
-      { key: "respondents", label: "Respondents Activity", href: "/admin/respondents", icon: UserCheck },
+      {
+        key: "respondents-manage",
+        label: "Respondents Management",
+        href: "/admin/respondents/manage",
+        icon: UserCheck,
+      },
+      {
+        key: "respondents-activity",
+        label: "Respondents Activity",
+        href: "/admin/respondents",
+        icon: UserCheck,
+      },
     ],
   },
   {
@@ -90,11 +100,51 @@ const navSections: MenuGroup[] = [
 export default function AdminSidebar({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [navSearch, setNavSearch] = useState("");
+  const [loggingOut, setLoggingOut] = useState(false);
   const pathname = usePathname();
 
+  async function handleLogout() {
+    if (loggingOut) return;
+
+    setLoggingOut(true);
+
+    try {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || !data?.success) {
+        console.error("LOGOUT_FAILED:", data);
+      }
+    } catch (error) {
+      console.error("LOGOUT_ERROR:", error);
+    } finally {
+      // Force a completely fresh login page instead of Next.js
+      // client-side navigation, which can preserve the old login state.
+      window.location.replace("/auth/login");
+    }
+  }
+
   const isActive = (href: string) => {
-    if (href === "/admin") return pathname === "/admin";
-    return pathname.startsWith(href);
+    // Dashboard must only match /admin exactly.
+    if (href === "/admin") {
+      return pathname === "/admin";
+    }
+
+    // Respondents Activity is the parent route:
+    // /admin/respondents
+    // It must NOT become active on:
+    // /admin/respondents/manage
+    if (href === "/admin/respondents") {
+      return pathname === "/admin/respondents";
+    }
+
+    // All other menu items can match their child routes.
+    return pathname === href || pathname.startsWith(`${href}/`);
   };
 
   const filteredSections = navSections
@@ -498,25 +548,30 @@ export default function AdminSidebar({ children }: { children: React.ReactNode }
                 Super Admin
               </span>
             </div>
-            <Link
-              href="/login"
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={loggingOut}
               style={{
                 width: 36,
                 height: 36,
                 borderRadius: 8,
                 border: "1px solid rgba(255,255,255,0.08)",
-                background: "rgba(255,255,255,0.04)",
+                background: loggingOut
+                  ? "rgba(255,255,255,0.02)"
+                  : "rgba(255,255,255,0.04)",
                 color: "rgba(255,255,255,0.7)",
-                cursor: "pointer",
+                cursor: loggingOut ? "not-allowed" : "pointer",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 textDecoration: "none",
+                opacity: loggingOut ? 0.6 : 1,
               }}
-              title="Logout"
+              title={loggingOut ? "Logging out..." : "Logout"}
             >
               <LogOut size={16} />
-            </Link>
+            </button>
           </div>
         </header>
 

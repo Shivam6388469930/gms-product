@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { connectDB } from "@/config/db";
 import Project from "@/models/Project";
 import RespondentSession from "@/models/RespondentSession";
+import Respondent from "@/models/Respondent";
 import ProjectSupply from "@/models/ProjectSupply";
 import { dispatchWebhooks } from "@/lib/webhooks";
 
@@ -182,6 +183,35 @@ async function handleCallback(req: NextRequest, { params }: RouteContext) {
     } else if (normalizedStatus === "quality_reject") {
       project.progress.qualityRejects = (project.progress.qualityRejects || 0) + 1;
     }
+
+    // Synchronize participation and earnings to Respondent profile if present in panel database
+    try {
+      const respInc: Record<string, number> = { totalSurveys: 1 };
+      if (normalizedStatus === "completed") {
+        respInc.completedSurveys = 1;
+        respInc.totalEarnings = estimatedCpi;
+        respInc.pendingEarnings = estimatedCpi;
+      } else if (normalizedStatus === "screened_out") {
+        respInc.screenouts = 1;
+      } else if (normalizedStatus === "quota_full") {
+        respInc.quotaFull = 1;
+      } else if (normalizedStatus === "quality_reject") {
+        respInc.qualityRejects = 1;
+      }
+
+      await Respondent.findOneAndUpdate(
+        {
+          $or: [
+            { respondentId: rid },
+            ...(mongoose.Types.ObjectId.isValid(rid) ? [{ _id: rid }] : []),
+          ],
+        },
+        {
+          $inc: respInc,
+          $set: { lastActiveAt: now },
+        }
+      ).catch(() => {});
+    } catch {}
 
     await project.save();
 

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Inbox,
@@ -13,7 +13,6 @@ import {
   Layers,
   Code2,
   BarChart3,
-  ExternalLink,
   ChevronRight,
   ShieldCheck,
   Bell,
@@ -21,16 +20,44 @@ import {
   X,
   Sparkles,
   ArrowRightLeft,
+  LogOut,
 } from "lucide-react";
 import { SupplierProvider, useSupplier } from "@/lib/supplier-store";
 
 function SupplierLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { projects, supplierName, supplierCode } = useSupplier();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const {
+    projects,
+    supplierName,
+    supplierCode,
+    isLiveBackend,
+    isSyncing,
+    refreshData,
+  } = useSupplier();
 
   const incomingCount = projects.filter((p) => p.status === "incoming").length;
   const activeCount = projects.filter((p) => p.status === "active").length;
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (err) {
+      console.error("Logout failed:", err);
+    } finally {
+      setMobileMenuOpen(false);
+      router.push("/login");
+      router.refresh();
+      setIsLoggingOut(false);
+    }
+  };
 
   const navItems = [
     {
@@ -58,9 +85,14 @@ function SupplierLayoutContent({ children }: { children: React.ReactNode }) {
       icon: CheckCircle2,
     },
     {
+      name: "Respondents",
+      href: "/supplier/respondents",
+      icon: Users,
+    },
+    {
       name: "Respondent Activity",
       href: "/supplier/respondent-activity",
-      icon: Users,
+      icon: Activity,
     },
     {
       name: "Revenue",
@@ -136,16 +168,27 @@ function SupplierLayoutContent({ children }: { children: React.ReactNode }) {
             </Link>
           </div>
 
+          {/* Current supplier only (no supplier list / dropdown) */}
           <div className="rounded-xl bg-zinc-900/70 border border-zinc-800 p-3">
             <div className="flex items-center justify-between text-xs mb-1">
               <span className="text-zinc-400 font-medium">Supply Partner:</span>
-              <span className="inline-flex items-center gap-1 text-emerald-400 text-[11px] font-medium">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Live Sync
+              <span
+                className={`inline-flex items-center gap-1 text-[11px] font-medium ${
+                  isLiveBackend ? "text-emerald-400" : "text-amber-400"
+                }`}
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    isLiveBackend ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
+                  }`}
+                />
+                {isLiveBackend ? "Online" : "Offline"}
               </span>
             </div>
             <div className="text-xs font-semibold text-zinc-200 truncate">{supplierName}</div>
-            <div className="text-[10px] text-zinc-500 font-mono mt-0.5">Code: {supplierCode}</div>
+            <div className="text-[10px] text-zinc-400 font-mono mt-0.5">
+              Code: {supplierCode || "1001"}
+            </div>
           </div>
         </div>
 
@@ -220,6 +263,16 @@ function SupplierLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
+          {/* Logout */}
+          <button
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-semibold border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 disabled:opacity-60 disabled:cursor-not-allowed transition"
+          >
+            <LogOut size={14} />
+            {isLoggingOut ? "Logging out..." : "Logout"}
+          </button>
+
           <div className="flex items-center justify-between text-[11px] text-zinc-400 px-1">
             <span className="flex items-center gap-1.5">
               <ShieldCheck size={13} className="text-emerald-400" />
@@ -243,10 +296,21 @@ function SupplierLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-xs">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-              <span className="text-zinc-300">Live Feasibility Engine</span>
-            </div>
+            <button
+              onClick={refreshData}
+              disabled={isSyncing}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-xs hover:border-zinc-700 transition"
+              title="Click to sync with backend database"
+            >
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  isLiveBackend ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
+                }`}
+              />
+              <span className="text-zinc-300 font-medium">
+                {isSyncing ? "Syncing..." : isLiveBackend ? "Online" : "Offline"}
+              </span>
+            </button>
 
             <Link
               href="/supplier/incoming-projects"
@@ -261,12 +325,29 @@ function SupplierLayoutContent({ children }: { children: React.ReactNode }) {
 
             <div className="flex items-center gap-3 pl-3 border-l border-zinc-800">
               <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-sm">
-                AP
+                {(supplierName || "SP")
+                  .split(" ")
+                  .map((w) => w[0])
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .join("")
+                  .toUpperCase() || "SP"}
               </div>
               <div className="hidden lg:block text-left">
-                <div className="text-xs font-semibold text-zinc-200">Apex Sample Lead</div>
-                <div className="text-[10px] text-zinc-400 font-mono">ops@apexsample.com</div>
+                <div className="text-xs font-semibold text-zinc-200">{supplierName}</div>
+                <div className="text-[10px] text-zinc-400 font-mono">
+                  ops@{supplierCode ? supplierCode.toLowerCase() : "sample"}.gms
+                </div>
               </div>
+              <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="p-2 text-zinc-400 hover:text-red-400 rounded-lg hover:bg-zinc-900 disabled:opacity-60 transition"
+                title="Logout"
+                aria-label="Logout"
+              >
+                <LogOut size={18} />
+              </button>
             </div>
           </div>
         </header>
@@ -281,7 +362,9 @@ function SupplierLayoutContent({ children }: { children: React.ReactNode }) {
 export default function SupplierLayout({ children }: { children: React.ReactNode }) {
   return (
     <SupplierProvider>
-      <SupplierLayoutContent>{children}</SupplierLayoutContent>
+      <React.Suspense fallback={<div className="min-h-screen bg-zinc-950" />}>
+        <SupplierLayoutContent>{children}</SupplierLayoutContent>
+      </React.Suspense>
     </SupplierProvider>
   );
 }

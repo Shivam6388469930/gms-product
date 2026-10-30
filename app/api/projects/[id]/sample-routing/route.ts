@@ -4,7 +4,10 @@ import mongoose from "mongoose";
 import { connectDB } from "@/config/db";
 import Project from "@/models/Project";
 import Supply from "@/models/Supply";
-import ProjectSupply from "@/models/ProjectSupply";
+import ProjectSupply from '@/models/ProjectSupply';
+import SupplierAllocation from '@/models/SupplierAllocation';
+import SupplierProject from '@/models/SupplierProject';
+import User from '@/models/User';
 import { getUserId } from "@/lib/auth";
 
 type RouteContext = {
@@ -300,6 +303,57 @@ export async function POST(
     }));
 
     await ProjectSupply.insertMany(documents);
+
+    // Sync to SupplierAllocation and SupplierProject for each supplier
+    await SupplierAllocation.deleteMany({ project: project._id });
+    for (const doc of documents) {
+      const supplyDoc = supplyMap.get(doc.supply.toString());
+      let supplierUser = await User.findOne({
+        $or: [
+          { supplierCode: supplyDoc?.supplierCode },
+          { supplierId: supplyDoc?._id },
+        ],
+      });
+      if (!supplierUser) {
+        supplierUser = await User.findOne({ role: 'supplier' });
+      }
+      if (supplierUser) {
+        await SupplierAllocation.create({
+          project: project._id,
+          supplierId: supplierUser._id,
+          supplierCode: supplyDoc?.supplierCode || supplierUser.supplierCode || 'SUP-001',
+          supply: doc.supply,
+          allocatedSample: doc.allocatedSample,
+          allocatedCpi: doc.allocatedCpi,
+          routingPercent: doc.routingPercent,
+          priority: doc.priority,
+          status: 'active',
+          allocatedAt: new Date(),
+        });
+
+        // Also ensure SupplierProject exists for supplier project dashboard
+        await SupplierProject.findOneAndUpdate(
+          { supplierCode: supplyDoc?.supplierCode || supplierUser.supplierCode || 'SUP-001', projectId: project._id.toString() },
+          {
+            $set: {
+              title: project.surveyTitle || 'Survey Study',
+              clientName: (project.owner as any)?.name || 'Buyer',
+              audience: project.audienceType || 'consumer',
+              country: project.country || 'US',
+              sampleRequired: doc.allocatedSample,
+              cpi: doc.allocatedCpi,
+              totalValue: doc.allocatedSample * doc.allocatedCpi,
+              loi: project.loi || 10,
+              ir: project.ir || 30,
+              status: 'active',
+              deadlineDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
+              description: project.audienceDescription || '',
+            },
+          },
+          { upsert: true, new: true }
+        );
+      }
+    }
 
     return NextResponse.json({
       success: true,

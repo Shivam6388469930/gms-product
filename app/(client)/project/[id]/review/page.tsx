@@ -425,60 +425,7 @@ function ReviewPageContent() {
           </div>
         </div>
 
-        {/* Stepper Progress */}
-        <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            {[
-              "Audience",
-              "Feasibility",
-              "Pricing",
-              "Survey Setup",
-              "Sample Routing",
-              "Review & Launch",
-            ].map((step, index) => {
-              const completed = isLive || index < 5;
-              const current = index === 5;
-
-              return (
-                <div key={step} className="flex flex-1 items-center">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition ${
-                        current && !isLive
-                          ? "bg-slate-900 text-white shadow-md ring-4 ring-slate-900/10"
-                          : completed
-                          ? "bg-emerald-600 text-white shadow-sm"
-                          : "bg-slate-100 text-slate-400"
-                      }`}
-                    >
-                      {completed ? "✓" : index + 1}
-                    </div>
-
-                    <span
-                      className={`hidden text-xs font-medium lg:block ${
-                        current
-                          ? "font-semibold text-slate-900"
-                          : completed
-                          ? "text-emerald-700"
-                          : "text-slate-400"
-                      }`}
-                    >
-                      {step}
-                    </span>
-                  </div>
-
-                  {index < 5 && (
-                    <div
-                      className={`mx-3 h-0.5 flex-1 ${
-                        completed ? "bg-emerald-500" : "bg-slate-200"
-                      }`}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+     
 
         {/* Feedback Alerts */}
         {error && (

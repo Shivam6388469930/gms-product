@@ -70,10 +70,10 @@ export default function RespondentAccountPage() {
       <form onSubmit={handleSave} className="space-y-6 text-xs">
         {/* Security Section */}
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 space-y-4">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
+          <h3 className="text-base font-bold text-white flex items-center gap-2">
             <Shield size={16} className="text-cyan-400" />
             Security & Login
-          </h2>
+          </h3>
 
           <div className="flex items-center justify-between py-3 border-b border-zinc-800">
             <div>
@@ -118,7 +118,7 @@ export default function RespondentAccountPage() {
 
         {/* Data Privacy & GDPR */}
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 space-y-4">
-          <h2 className="text-base font-bold text-white">Data Privacy & GDPR Rights</h2>
+          <h3 className="text-base font-bold text-white">Data Privacy & GDPR Rights</h3>
           <p className="text-zinc-400 text-xs">
             You retain complete control over your research telemetry and demographic records.
           </p>

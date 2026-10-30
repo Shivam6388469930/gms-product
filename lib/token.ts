@@ -14,7 +14,7 @@ export function hashToken(token: string): string {
     .digest("hex");
 }
 
-export function createAccessToken(userId: string): string {
+export function createAccessToken(userId: string, role?: string): string {
   const secret = process.env.JWT_ACCESS_SECRET;
 
   if (!secret) {
@@ -24,6 +24,7 @@ export function createAccessToken(userId: string): string {
   return jwt.sign(
     {
       userId,
+      role: role || "client",
       type: "access",
     },
     secret,

@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
+
 type Project = {
   _id: string;
   name: string;
@@ -204,18 +205,12 @@ function PriceEngineContent() {
     <main className="min-h-screen bg-slate-50 px-4 py-6 md:px-8">
       <div className="mx-auto max-w-7xl">
 
+        {/* Survey Creation Stepper */}
+
+
         {/* Header */}
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <button
-              onClick={() =>
-                router.push(`/projects/${projectId}`)
-              }
-              className="mb-2 text-sm text-slate-500 hover:text-slate-900"
-            >
-              ← Back to project
-            </button>
-
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
               Pricing Engine
             </h1>

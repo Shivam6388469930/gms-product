@@ -142,10 +142,10 @@ export default function SupplierDashboardPage() {
           <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/50 p-6">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h2 className="text-base font-semibold text-white flex items-center gap-2">
+                <h3 className="text-base font-semibold text-white flex items-center gap-2">
                   <Inbox size={18} className="text-amber-400" />
                   Incoming Project Invitations
-                </h2>
+                </h3>
                 <p className="text-xs text-zinc-400 mt-0.5">
                   Available projects matching your panel supply capacity
                 </p>
@@ -227,10 +227,10 @@ export default function SupplierDashboardPage() {
           <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/50 p-6">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h2 className="text-base font-semibold text-white flex items-center gap-2">
+                <h3 className="text-base font-semibold text-white flex items-center gap-2">
                   <Activity size={18} className="text-emerald-400" />
                   Live Fieldwork & Quota Progress
-                </h2>
+                </h3>
                 <p className="text-xs text-zinc-400 mt-0.5">
                   Currently routing live respondent sample
                 </p>
@@ -308,10 +308,10 @@ export default function SupplierDashboardPage() {
           {/* Live Activity Stream */}
           <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/50 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                 <Users size={16} className="text-indigo-400" />
                 Live Respondent Stream
-              </h2>
+              </h3>
               <Link
                 href="/supplier/respondent-activity"
                 className="text-[11px] text-indigo-400 hover:underline"
@@ -358,10 +358,10 @@ export default function SupplierDashboardPage() {
 
           {/* Quick API / Postback Status */}
           <div className="rounded-2xl border border-zinc-800/80 bg-gradient-to-b from-zinc-900/70 to-zinc-950 p-6 space-y-4">
-            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
               <ShieldCheck size={16} className="text-emerald-400" />
               S2S Integration Health
-            </h2>
+            </h3>
             <div className="space-y-2 text-xs">
               <div className="flex justify-between py-1.5 border-b border-zinc-800">
                 <span className="text-zinc-400">Postback Server</span>

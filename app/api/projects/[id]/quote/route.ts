@@ -72,49 +72,41 @@ export async function POST(
       );
     }
 
-    // if (
-    //   project.status !== "draft"
-    // ) {
-    //   return fail(
-    //     "Quote can only be generated for a draft project",
-    //     409
-    //   );
-    // }
 
     const urgency =
       body?.urgency === "urgent" ||
-      body?.urgency === "very_urgent"
+        body?.urgency === "very_urgent"
         ? body.urgency
         : "normal";
 
     const qualityTier =
       body?.qualityTier === "premium" ||
-      body?.qualityTier === "healthcare_b2b"
+        body?.qualityTier === "healthcare_b2b"
         ? body.qualityTier
         : "standard";
 
     const programmingFee =
       typeof body?.programmingFee === "number" &&
-      body.programmingFee >= 0
+        body.programmingFee >= 0
         ? body.programmingFee
         : 0;
 
     const projectManagementFee =
       typeof body?.projectManagementFee === "number" &&
-      body.projectManagementFee >= 0
+        body.projectManagementFee >= 0
         ? body.projectManagementFee
         : 0;
 
     const analyticsFee =
       typeof body?.analyticsFee === "number" &&
-      body.analyticsFee >= 0
+        body.analyticsFee >= 0
         ? body.analyticsFee
         : 0;
 
     const marginPercent =
       typeof body?.marginPercent === "number" &&
-      body.marginPercent >= 0 &&
-      body.marginPercent <= 100
+        body.marginPercent >= 0 &&
+        body.marginPercent <= 100
         ? body.marginPercent
         : 0;
 

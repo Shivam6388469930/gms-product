@@ -79,9 +79,9 @@ export default function SupplierReportsPage() {
       {/* Funnel Overview */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-white">
+          <h3 className="text-base font-bold text-white">
             Traffic Funnel & Yield Efficiency
-          </h2>
+          </h3>
           <span className="text-xs font-semibold text-emerald-400">
             Conversion Rate: {conversionRate}%
           </span>
@@ -140,7 +140,7 @@ export default function SupplierReportsPage() {
 
       {/* Country Breakdown Table */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 space-y-4">
-        <h2 className="text-base font-bold text-white">Geographic Yield Breakdown</h2>
+        <h3 className="text-base font-bold text-white">Geographic Yield Breakdown</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-zinc-950/80 text-zinc-400 font-mono text-[11px] uppercase border-b border-zinc-800">

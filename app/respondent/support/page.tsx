@@ -88,10 +88,10 @@ export default function RespondentSupportPage() {
 
       {/* FAQ Accordion */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 space-y-4">
-        <h2 className="text-base font-bold text-white flex items-center gap-2">
+        <h3 className="text-base font-bold text-white flex items-center gap-2">
           <LifeBuoy size={16} className="text-emerald-400" />
           Common Inquiries
-        </h2>
+        </h3>
 
         <div className="space-y-2">
           {faqs.map((faq, idx) => {
@@ -127,10 +127,10 @@ export default function RespondentSupportPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Form */}
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 space-y-4">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
+          <h3 className="text-base font-bold text-white flex items-center gap-2">
             <MessageSquare size={16} className="text-cyan-400" />
             Submit a Help Ticket
-          </h2>
+          </h3>
 
           <form onSubmit={handleSubmitTicket} className="space-y-3 text-xs">
             <div>
@@ -194,10 +194,10 @@ export default function RespondentSupportPage() {
 
         {/* Existing Tickets */}
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 space-y-4">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
+          <h3 className="text-base font-bold text-white flex items-center gap-2">
             <Clock size={16} className="text-amber-400" />
             Your Ticket Status
-          </h2>
+          </h3>
 
           <div className="space-y-3">
             {supportTickets.map((ticket) => (

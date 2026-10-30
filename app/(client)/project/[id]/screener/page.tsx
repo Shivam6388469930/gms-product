@@ -359,7 +359,7 @@ function ScreenerBuilderContent() {
   return (
     <div className="space-y-8">
       {/* Workflow Navigation Stepper */}
-      <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+      {/* <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
         <div className="flex flex-wrap items-center justify-between gap-4 text-xs">
           <Link href="/project" className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
             ← Projects
@@ -382,7 +382,7 @@ function ScreenerBuilderContent() {
             </Link>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -475,9 +475,9 @@ function ScreenerBuilderContent() {
         {/* Left Column: Questions List + Add Question Form */}
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">
+            <h3 className="text-lg text-white font-semibold">
               Active Screener Questions ({screener.questions.length})
-            </h2>
+            </h3>
             {!isAdding && (
               <button
                 type="button"
@@ -496,7 +496,7 @@ function ScreenerBuilderContent() {
           {isAdding && (
             <div className="rounded-2xl border-2 border-zinc-900/10 bg-white p-6 shadow-sm dark:border-zinc-100/10 dark:bg-zinc-900">
               <div className="flex items-center justify-between border-b border-zinc-100 pb-3 dark:border-zinc-800">
-                <h3 className="font-semibold text-black">
+                <h3 className="font-semibold  text-white">
                   {editingIndex !== null ? "Edit Screener Question" : "Create New Screener Question"}
                 </h3>
                 <button

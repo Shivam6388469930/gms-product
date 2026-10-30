@@ -1,6 +1,30 @@
-import mongoose, { Schema } from "mongoose";
+// models/Supply.ts
 
-const SupplySchema = new Schema(
+import mongoose, { Schema, Document, Model } from "mongoose";
+
+export interface ISupply extends Document {
+  supplierName: string;
+  supplierCode: string;
+  supplierEmail: string;
+
+  country: string;
+  audienceType: "consumer" | "b2b" | "healthcare";
+  audienceDescription: string;
+
+  availableSample: number;
+  baseCpi: number;
+  historicalIr: number;
+  averageLoi: number;
+  qualityScore: number;
+
+  active: boolean;
+  lastUpdatedAt: Date;
+
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const SupplySchema = new Schema<ISupply>(
   {
     supplierName: {
       type: String,
@@ -9,17 +33,18 @@ const SupplySchema = new Schema(
       index: true,
     },
 
-    /**
-     * Supplier identifier.
-     *
-     * Do NOT make this globally unique because
-     * one supplier can have multiple country/audience
-     * supply records.
-     */
     supplierCode: {
       type: String,
       required: true,
       trim: true,
+      index: true,
+    },
+
+    supplierEmail: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
       index: true,
     },
 
@@ -43,9 +68,6 @@ const SupplySchema = new Schema(
       trim: true,
     },
 
-    /**
-     * Current available respondent capacity.
-     */
     availableSample: {
       type: Number,
       required: true,
@@ -53,9 +75,6 @@ const SupplySchema = new Schema(
       min: 0,
     },
 
-    /**
-     * Supplier base CPI.
-     */
     baseCpi: {
       type: Number,
       required: true,
@@ -63,12 +82,6 @@ const SupplySchema = new Schema(
       min: 0,
     },
 
-    /**
-     * Historical incidence rate.
-     *
-     * Stored as percentage:
-     * 30 = 30%
-     */
     historicalIr: {
       type: Number,
       default: 0,
@@ -76,18 +89,12 @@ const SupplySchema = new Schema(
       max: 100,
     },
 
-    /**
-     * Historical average survey length.
-     */
     averageLoi: {
       type: Number,
       default: 0,
       min: 0,
     },
 
-    /**
-     * Internal supplier quality score.
-     */
     qualityScore: {
       type: Number,
       default: 0,
@@ -95,19 +102,12 @@ const SupplySchema = new Schema(
       max: 100,
     },
 
-    /**
-     * Whether this supply source can currently
-     * be used by the Feasibility/Sample engine.
-     */
     active: {
       type: Boolean,
       default: true,
       index: true,
     },
 
-    /**
-     * When supplier capacity was last refreshed.
-     */
     lastUpdatedAt: {
       type: Date,
       default: Date.now,
@@ -119,13 +119,13 @@ const SupplySchema = new Schema(
 );
 
 /**
- * One supplier can have:
+ * One supplier can have multiple supply records:
  *
  * SUP_A + US + consumer
  * SUP_A + UK + consumer
  * SUP_A + US + b2b
  *
- * But the same combination cannot exist twice.
+ * But the exact same combination cannot exist twice.
  */
 SupplySchema.index(
   {
@@ -138,5 +138,8 @@ SupplySchema.index(
   }
 );
 
-export default mongoose.models.Supply ||
-  mongoose.model("Supply", SupplySchema);
+const Supply: Model<ISupply> =
+  mongoose.models.Supply ||
+  mongoose.model<ISupply>("Supply", SupplySchema);
+
+export default Supply;

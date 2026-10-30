@@ -20,10 +20,28 @@ import {
   Check,
 } from "lucide-react";
 
+interface RespondentSupplier {
+  _id: string;
+  supplierName: string;
+  supplierCode: string;
+  supplierEmail?: string;
+  country?: string;
+  audienceType?: string;
+  audienceDescription?: string;
+  availableSample?: number;
+  baseCpi?: number;
+  historicalIr?: number;
+  averageLoi?: number;
+  qualityScore?: number;
+  active?: boolean;
+  lastUpdatedAt?: string;
+}
+
 interface RespondentItem {
   _id: string;
   respondentId: string;
   supplierCode: string;
+  supplier?: RespondentSupplier | null;
   project?: {
     _id: string;
     surveyTitle: string;
@@ -430,18 +448,67 @@ export default function RespondentsPage() {
                       </div>
                     </td>
                     <td style={{ padding: "12px 16px" }}>
-                      <span
-                        style={{
-                          padding: "2px 7px",
-                          borderRadius: 4,
-                          background: "rgba(99,102,241,0.1)",
-                          color: "#a5b4fc",
-                          fontSize: 11,
-                          fontWeight: 600,
-                        }}
-                      >
-                        {item.supplierCode || "DIRECT"}
-                      </span>
+                      {item.supplier ? (
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 3,
+                          }}
+                        >
+                          <div
+                            style={{
+                              color: "#fff",
+                              fontSize: 12,
+                              fontWeight: 600,
+                            }}
+                          >
+                            {item.supplier.supplierName}
+                          </div>
+
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 6,
+                            }}
+                          >
+                            <span
+                              style={{
+                                padding: "2px 6px",
+                                borderRadius: 4,
+                                background: "rgba(99,102,241,0.1)",
+                                color: "#a5b4fc",
+                                fontSize: 10,
+                                fontWeight: 600,
+                              }}
+                            >
+                              {item.supplier.supplierCode}
+                            </span>
+
+                            <span
+                              style={{
+                                fontSize: 10,
+                                color: item.supplier.active ? "#34d399" : "#f87171",
+                              }}
+                            >
+                              {item.supplier.active ? "Active" : "Inactive"}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <span
+                          style={{
+                            padding: "2px 7px",
+                            borderRadius: 4,
+                            background: "rgba(255,255,255,0.05)",
+                            color: "rgba(255,255,255,0.45)",
+                            fontSize: 11,
+                          }}
+                        >
+                          DIRECT
+                        </span>
+                      )}
                     </td>
                     <td style={{ padding: "12px 16px" }}>{getStatusBadge(item.status)}</td>
                     <td style={{ padding: "12px 16px" }}>{getFraudScoreBadge(item.fraudScore)}</td>
@@ -554,6 +621,263 @@ export default function RespondentsPage() {
                 <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>SUPPLIER CODE</div>
                 <div style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{selectedSession.supplierCode}</div>
               </div>
+            </div>
+
+            {/* Supplier Panel */}
+            <div
+              style={{
+                marginBottom: 20,
+                borderRadius: 12,
+                border: "1px solid rgba(99,102,241,0.25)",
+                background:
+                  "linear-gradient(135deg, rgba(99,102,241,0.10), rgba(255,255,255,0.025))",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  padding: "16px 18px",
+                  borderBottom: "1px solid rgba(255,255,255,0.08)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      color: "#fff",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      marginBottom: 4,
+                    }}
+                  >
+                    Supplier Panel
+                  </div>
+                  <div
+                    style={{
+                      color: "rgba(255,255,255,0.45)",
+                      fontSize: 11,
+                    }}
+                  >
+                    Supplier connected with this respondent session
+                  </div>
+                </div>
+
+                {selectedSession.supplier && (
+                  <span
+                    style={{
+                      padding: "4px 9px",
+                      borderRadius: 999,
+                      background: selectedSession.supplier.active
+                        ? "rgba(16,185,129,0.12)"
+                        : "rgba(239,68,68,0.12)",
+                      border: selectedSession.supplier.active
+                        ? "1px solid rgba(16,185,129,0.25)"
+                        : "1px solid rgba(239,68,68,0.25)",
+                      color: selectedSession.supplier.active
+                        ? "#34d399"
+                        : "#f87171",
+                      fontSize: 10,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {selectedSession.supplier.active ? "ACTIVE" : "INACTIVE"}
+                  </span>
+                )}
+              </div>
+
+              {selectedSession.supplier ? (
+                <div style={{ padding: 18 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      marginBottom: 18,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 10,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "rgba(99,102,241,0.15)",
+                        border: "1px solid rgba(99,102,241,0.25)",
+                        color: "#a5b4fc",
+                        fontSize: 18,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {selectedSession.supplier.supplierName
+                        ?.charAt(0)
+                        ?.toUpperCase() || "S"}
+                    </div>
+
+                    <div>
+                      <div
+                        style={{
+                          color: "#fff",
+                          fontSize: 15,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {selectedSession.supplier.supplierName}
+                      </div>
+                      <div
+                        style={{
+                          color: "rgba(255,255,255,0.45)",
+                          fontSize: 11,
+                          marginTop: 3,
+                        }}
+                      >
+                        Code: {selectedSession.supplier.supplierCode}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                      gap: 10,
+                    }}
+                  >
+                    {[
+                      ["SUPPLIER EMAIL", selectedSession.supplier.supplierEmail || "N/A"],
+                      ["COUNTRY", selectedSession.supplier.country || "Global"],
+                      ["AUDIENCE TYPE", selectedSession.supplier.audienceType || "N/A"],
+                      [
+                        "AVAILABLE SAMPLE",
+                        typeof selectedSession.supplier.availableSample === "number"
+                          ? selectedSession.supplier.availableSample.toLocaleString()
+                          : "N/A",
+                      ],
+                      [
+                        "BASE CPI",
+                        typeof selectedSession.supplier.baseCpi === "number"
+                          ? `$${selectedSession.supplier.baseCpi.toFixed(2)}`
+                          : "N/A",
+                      ],
+                      [
+                        "HISTORICAL IR",
+                        typeof selectedSession.supplier.historicalIr === "number"
+                          ? `${selectedSession.supplier.historicalIr}%`
+                          : "N/A",
+                      ],
+                      [
+                        "AVERAGE LOI",
+                        typeof selectedSession.supplier.averageLoi === "number"
+                          ? `${selectedSession.supplier.averageLoi} min`
+                          : "N/A",
+                      ],
+                      [
+                        "QUALITY SCORE",
+                        typeof selectedSession.supplier.qualityScore === "number"
+                          ? `${selectedSession.supplier.qualityScore}%`
+                          : "N/A",
+                      ],
+                    ].map(([label, value]) => (
+                      <div
+                        key={label}
+                        style={{
+                          background: "rgba(255,255,255,0.035)",
+                          borderRadius: 8,
+                          padding: 11,
+                        }}
+                      >
+                        <div
+                          style={{
+                            color: "rgba(255,255,255,0.4)",
+                            fontSize: 10,
+                            marginBottom: 5,
+                          }}
+                        >
+                          {label}
+                        </div>
+                        <div
+                          style={{
+                            color: "#fff",
+                            fontSize: 12,
+                            fontWeight: label === "QUALITY SCORE" ? 700 : 500,
+                          }}
+                        >
+                          {value}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {selectedSession.supplier.audienceDescription && (
+                    <div
+                      style={{
+                        marginTop: 10,
+                        background: "rgba(255,255,255,0.035)",
+                        borderRadius: 8,
+                        padding: 12,
+                      }}
+                    >
+                      <div
+                        style={{
+                          color: "rgba(255,255,255,0.4)",
+                          fontSize: 10,
+                          marginBottom: 6,
+                        }}
+                      >
+                        AUDIENCE DESCRIPTION
+                      </div>
+                      <div
+                        style={{
+                          color: "rgba(255,255,255,0.8)",
+                          fontSize: 12,
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {selectedSession.supplier.audienceDescription}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedSession.supplier.lastUpdatedAt && (
+                    <div
+                      style={{
+                        marginTop: 10,
+                        color: "rgba(255,255,255,0.35)",
+                        fontSize: 10,
+                      }}
+                    >
+                      Last supplier update:{" "}
+                      {new Date(
+                        selectedSession.supplier.lastUpdatedAt
+                      ).toLocaleString()}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    padding: 20,
+                    textAlign: "center",
+                    color: "rgba(255,255,255,0.45)",
+                    fontSize: 12,
+                  }}
+                >
+                  No supplier information found for this respondent session.
+                  <div
+                    style={{
+                      marginTop: 6,
+                      color: "rgba(255,255,255,0.3)",
+                      fontSize: 10,
+                    }}
+                  >
+                    Supplier Code: {selectedSession.supplierCode || "DIRECT"}
+                  </div>
+                </div>
+              )}
             </div>
 
             {selectedSession.terminatedReason && (

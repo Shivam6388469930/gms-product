@@ -1,4 +1,6 @@
 import mongoose, { Schema } from "mongoose";
+import "@/models/Project";
+import "@/models/Supply";
 
 const ProjectSupplySchema = new Schema(
   {

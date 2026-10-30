@@ -94,9 +94,7 @@ export async function POST(
     }
 
     const accessToken =
-      createAccessToken(
-        user._id.toString()
-      );
+      createAccessToken(user._id.toString(), user.role || "client");
 
     const refreshToken =
       generateRandomToken();

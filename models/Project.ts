@@ -1,4 +1,5 @@
 import mongoose, { Schema } from "mongoose";
+import "@/models/User";
 
 const counter = {
   type: Number,
@@ -288,12 +289,8 @@ const ProjectSchema = new Schema(
        OWNER
     ======================================================= */
 
-    owner: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-      index: true,
-    },
+    owner: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    buyerId: { type: Schema.Types.ObjectId, ref: 'User', index: true },
 
     /* =======================================================
        BASIC PROJECT INFO
@@ -520,6 +517,13 @@ const ProjectSchema = new Schema(
   }
 );
 
+ProjectSchema.pre("validate", function (this: any) {
+  if (!this.buyerId && this.owner) this.buyerId = this.owner;
+  if (!this.owner && this.buyerId) this.owner = this.buyerId;
+});
+ProjectSchema.virtual("buyer").get(function (this: any) {
+  return this.buyerId || this.owner;
+});
 ProjectSchema.virtual("name").get(function (this: { surveyTitle?: string }) {
   return this.surveyTitle || "";
 });

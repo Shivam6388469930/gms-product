@@ -514,60 +514,7 @@ function SampleRoutingContent() {
           </div>
         </div>
 
-        {/* Progress */}
-        <div className="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            {[
-              "Audience",
-              "Feasibility",
-              "Pricing",
-              "Survey Setup",
-              "Sample Routing",
-              "Launch",
-            ].map((step, index) => {
-              const current = step === "Sample Routing";
-              const completed =
-                index < 4;
-
-              return (
-                <div
-                  key={step}
-                  className="flex flex-1 items-center"
-                >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
-                        current
-                          ? "bg-slate-900 text-white"
-                          : completed
-                          ? "bg-emerald-500 text-white"
-                          : "bg-slate-100 text-slate-400"
-                      }`}
-                    >
-                      {completed ? "✓" : index + 1}
-                    </div>
-
-                    <span
-                      className={`hidden text-xs font-medium lg:block ${
-                        current
-                          ? "text-slate-900"
-                          : completed
-                          ? "text-emerald-600"
-                          : "text-slate-400"
-                      }`}
-                    >
-                      {step}
-                    </span>
-                  </div>
-
-                  {index < 5 && (
-                    <div className="mx-2 h-px flex-1 bg-slate-200" />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+    
 
         {/* Project summary */}
         <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-5">
@@ -829,7 +776,7 @@ function SampleRoutingContent() {
                               Number(e.target.value)
                             )
                           }
-                          className="w-20 rounded-lg border border-slate-300 px-2 py-2 text-center text-sm outline-none focus:border-slate-500 disabled:bg-slate-100"
+                          className="w-20 rounded-lg border text-black border-slate-300 px-2 py-2 text-center text-sm outline-none focus:border-slate-500 disabled:bg-slate-100"
                         />
                       </td>
 
@@ -850,7 +797,7 @@ function SampleRoutingContent() {
                             )
                           }
                           placeholder="0"
-                          className="w-28 rounded-lg border border-slate-300 px-3 py-2 text-right text-sm font-medium outline-none focus:border-slate-500 disabled:bg-slate-100"
+                          className="w-28 rounded-lg border text-black border-slate-300 px-3 py-2 text-right text-sm font-medium outline-none focus:border-slate-500 disabled:bg-slate-100"
                         />
                       </td>
 
@@ -873,7 +820,7 @@ function SampleRoutingContent() {
                               )
                             }
                             placeholder="0"
-                            className="w-24 rounded-lg border border-slate-300 px-3 py-2 text-right text-sm outline-none focus:border-slate-500 disabled:bg-slate-100"
+                            className="w-24 rounded-lg border text-black border-slate-300 px-3 py-2 text-right text-sm outline-none focus:border-slate-500 disabled:bg-slate-100"
                           />
 
                           <span className="text-sm text-slate-500">

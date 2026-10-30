@@ -101,10 +101,10 @@ export default function RespondentProfilePage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Section 1: Core Personal Info */}
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 space-y-4">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
+          <h3 className="text-base font-bold text-white flex items-center gap-2">
             <UserCheck size={16} className="text-emerald-400" />
             Basic Demographics
-          </h2>
+          </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
             <div>

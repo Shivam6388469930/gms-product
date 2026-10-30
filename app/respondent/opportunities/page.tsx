@@ -49,12 +49,13 @@ export default function SurveyOpportunitiesPage() {
     }, 800);
   };
 
-  const getDeviceIcon = (devices: string[]) => {
+  const getDeviceIcon = (devices?: string[]) => {
+    const list = Array.isArray(devices) ? devices : ["Desktop", "Mobile", "Tablet"];
     return (
       <div className="flex items-center gap-1.5 text-zinc-400 text-xs">
-        {devices.includes("Desktop") && <span className="flex items-center gap-1"><Laptop size={12} /> Desktop</span>}
-        {devices.includes("Mobile") && <span className="flex items-center gap-1"><Smartphone size={12} /> Mobile</span>}
-        {devices.includes("Tablet") && <span className="flex items-center gap-1"><Tablet size={12} /> Tablet</span>}
+        {list.includes("Desktop") && <span className="flex items-center gap-1"><Laptop size={12} /> Desktop</span>}
+        {list.includes("Mobile") && <span className="flex items-center gap-1"><Smartphone size={12} /> Mobile</span>}
+        {list.includes("Tablet") && <span className="flex items-center gap-1"><Tablet size={12} /> Tablet</span>}
       </div>
     );
   };
@@ -137,9 +138,9 @@ export default function SurveyOpportunitiesPage() {
                   </span>
                 </div>
 
-                <h2 className="text-base font-bold text-white tracking-tight leading-snug">
+                <h3 className="text-base text-white font-bold text-white tracking-tight leading-snug">
                   {opp.title}
-                </h2>
+                </h3>
 
                 <p className="text-xs text-zinc-400 line-clamp-2">
                   <strong className="text-zinc-300">Looking for:</strong> {opp.qualificationHint}

@@ -2,12 +2,22 @@
 
 import mongoose, { Schema, Document, Model } from "mongoose";
 
+export type UserRole =
+  | "admin"
+  | "manager"
+  | "user"
+  | "client"
+  | "buyer"
+  | "supplier"
+  | "respondent"
+  | "viewer";
+
 export interface IUser extends Document {
   name: string;
   email: string;
   password: string;
 
-  role: string;
+  role: UserRole;
 
   emailVerified: boolean;
 
@@ -18,6 +28,11 @@ export interface IUser extends Document {
   passwordResetExpires?: Date;
 
   isBlocked: boolean;
+
+  supplierCode?: string;
+  supplierId?: mongoose.Types.ObjectId;
+
+  respondentId?: string;
 
   createdAt: Date;
   updatedAt: Date;
@@ -46,12 +61,22 @@ const UserSchema = new Schema<IUser>(
       type: String,
       required: true,
       minlength: 8,
+      select: true,
     },
 
     role: {
       type: String,
-      default: "user",
-      enum: ["admin", "manager", "user", "client", "supplier", "respondent", "viewer"],
+      default: "client",
+      enum: [
+        "admin",
+        "manager",
+        "user",
+        "client",
+        "buyer",
+        "supplier",
+        "respondent",
+        "viewer",
+      ],
       index: true,
     },
 
@@ -83,6 +108,24 @@ const UserSchema = new Schema<IUser>(
     isBlocked: {
       type: Boolean,
       default: false,
+    },
+
+    supplierCode: {
+      type: String,
+      trim: true,
+      index: true,
+    },
+
+    supplierId: {
+      type: Schema.Types.ObjectId,
+      ref: "Supply",
+      index: true,
+    },
+
+    respondentId: {
+      type: String,
+      trim: true,
+      index: true,
     },
   },
   {

@@ -255,7 +255,7 @@ export default function ProjectsPage() {
             return (
               <Link
                 key={project._id}
-                href={`/project-details/${project._id}`}
+                href={`/project/${project._id}`}
                 className="grid grid-cols-1 sm:grid-cols-[1.5fr_1fr_120px_100px_40px] items-center gap-4 px-6 py-4.5 hover:bg-zinc-800/40 transition group"
               >
                 {/* Study Information */}

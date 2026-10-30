@@ -52,7 +52,8 @@ const navSections: MenuGroup[] = [
       { key: "dashboard", label: "Dashboard", href: "/admin", icon: LayoutDashboard },
       { key: "users", label: "User", href: "/admin/users", icon: Users },
       { key: "suppliers", label: "Suppliers", href: "/admin/suppliers", icon: Truck },
-      { key: "respondents", label: "Respondents", href: "/admin/respondents", icon: UserCheck },
+       { key: "respondents-manage", label: "Respondents Management", href: "/admin/respondents/manage", icon: UserCheck },
+      { key: "respondents", label: "Respondents Activity", href: "/admin/respondents", icon: UserCheck },
     ],
   },
   {

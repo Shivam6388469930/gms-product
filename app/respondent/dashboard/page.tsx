@@ -54,12 +54,13 @@ export default function RespondentDashboardPage() {
     }, 900);
   };
 
-  const getDeviceIcon = (devices: string[]) => {
+  const getDeviceIcon = (devices?: string[]) => {
+    const list = Array.isArray(devices) ? devices : ["Desktop", "Mobile", "Tablet"];
     return (
       <div className="flex items-center gap-1 text-zinc-400">
-        {devices.includes("Desktop") && <span aria-label="Desktop"><Laptop size={13} /></span>}
-        {devices.includes("Mobile") && <span aria-label="Mobile"><Smartphone size={13} /></span>}
-        {devices.includes("Tablet") && <span aria-label="Tablet"><Tablet size={13} /></span>}
+        {list.includes("Desktop") && <span aria-label="Desktop"><Laptop size={13} /></span>}
+        {list.includes("Mobile") && <span aria-label="Mobile"><Smartphone size={13} /></span>}
+        {list.includes("Tablet") && <span aria-label="Tablet"><Tablet size={13} /></span>}
       </div>
     );
   };

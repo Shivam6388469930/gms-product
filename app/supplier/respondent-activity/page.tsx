@@ -1,13 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Users,
   Search,
-  Filter,
-  ShieldCheck,
   ShieldAlert,
-  Clock,
   Laptop,
   Smartphone,
   Tablet,
@@ -21,20 +18,27 @@ import { useSupplier } from "@/lib/supplier-store";
 import { RespondentActivityLog } from "@/lib/supplier-data";
 
 export default function RespondentActivityPage() {
-  const { respondentLogs } = useSupplier();
+  const { respondentLogs, isLoading, isSyncing, refreshData } = useSupplier();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedLog, setSelectedLog] = useState<RespondentActivityLog | null>(null);
 
-  const filtered = respondentLogs.filter((log) => {
-    const matchesSearch =
-      log.respondentId.toLowerCase().includes(search.toLowerCase()) ||
-      log.sessionId.toLowerCase().includes(search.toLowerCase()) ||
-      log.ipAddress.toLowerCase().includes(search.toLowerCase()) ||
-      log.projectTitle.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === "all" || log.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+
+    return (respondentLogs || []).filter((log) => {
+      const matchesSearch =
+        !q ||
+        String(log.respondentId ?? "").toLowerCase().includes(q) ||
+        String(log.sessionId ?? "").toLowerCase().includes(q) ||
+        String(log.ipAddress ?? "").toLowerCase().includes(q) ||
+        String(log.projectTitle ?? "").toLowerCase().includes(q);
+
+      const matchesStatus = statusFilter === "all" || log.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [respondentLogs, search, statusFilter]);
 
   const getDeviceIcon = (device: string) => {
     switch (device) {
@@ -79,10 +83,63 @@ export default function RespondentActivityPage() {
       default:
         return (
           <span className="px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 text-[10px]">
-            {status}
+            {status || "unknown"}
           </span>
         );
     }
+  };
+
+  const handleExportCsv = () => {
+    if (filtered.length === 0) return;
+
+    const headers = [
+      "Session ID",
+      "Respondent ID",
+      "Project",
+      "Country",
+      "Device",
+      "IP Address",
+      "Fraud Score",
+      "Duration (s)",
+      "Status",
+      "Earned CPI",
+      "Date",
+      "Timestamp",
+    ];
+
+    const rows = filtered.map((l) => [
+      l.sessionId,
+      l.respondentId,
+      l.projectTitle,
+      l.country,
+      l.device,
+      l.ipAddress,
+      l.fraudScore ?? 0,
+      l.durationSeconds ?? 0,
+      l.status,
+      l.earnedCpi ?? 0,
+      l.date || "",
+      l.timestamp || "",
+    ]);
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [
+        headers.join(","),
+        ...rows.map((e) =>
+          e.map((val) => `"${String(val ?? "").replace(/"/g, '""')}"`).join(",")
+        ),
+      ].join("\n");
+
+    const link = document.createElement("a");
+    link.setAttribute("href", encodeURI(csvContent));
+    link.setAttribute(
+      "download",
+      `respondent_activity_${new Date().toISOString().split("T")[0]}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -98,23 +155,38 @@ export default function RespondentActivityPage() {
             Respondent Traffic & Session Stream
           </h1>
           <p className="text-sm text-zinc-400 mt-1">
-            Real-time feed of panelist sessions routed to active surveys, with automated fingerprinting and fraud detection.
+            Real-time feed of panelist sessions routed to active surveys, with automated
+            fingerprinting and fraud detection.
           </p>
         </div>
 
-        <button
-          onClick={() => alert("Exporting respondent session CSV log...")}
-          className="text-xs font-medium text-zinc-200 hover:text-white px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center gap-1.5 transition shrink-0"
-        >
-          <Download size={14} />
-          Export CSV Log
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => refreshData()}
+            disabled={isSyncing}
+            className="text-xs font-medium text-zinc-200 hover:text-white px-3.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center gap-1.5 transition disabled:opacity-50"
+          >
+            <RefreshCw size={14} className={isSyncing ? "animate-spin" : ""} />
+            Refresh
+          </button>
+          <button
+            onClick={handleExportCsv}
+            disabled={filtered.length === 0}
+            className="text-xs font-medium text-zinc-200 hover:text-white px-3.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center gap-1.5 transition disabled:opacity-40"
+          >
+            <Download size={14} />
+            Export CSV Log
+          </button>
+        </div>
       </div>
 
       {/* Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+          <Search
+            size={15}
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400"
+          />
           <input
             type="text"
             placeholder="Search by Respondent ID, Session, IP Address, or Study..."
@@ -154,8 +226,11 @@ export default function RespondentActivityPage() {
           </thead>
           <tbody className="divide-y divide-zinc-800/70 text-zinc-300">
             {filtered.map((log) => {
-              const fraudHigh = log.fraudScore > 75;
-              const fraudMed = log.fraudScore > 25 && log.fraudScore <= 75;
+              const fraud = Number(log.fraudScore ?? 0);
+              const duration = Number(log.durationSeconds ?? 0);
+              const earned = Number(log.earnedCpi ?? 0);
+              const fraudHigh = fraud > 75;
+              const fraudMed = fraud > 25 && fraud <= 75;
 
               return (
                 <tr key={log.id} className="hover:bg-zinc-800/30 transition">
@@ -163,14 +238,18 @@ export default function RespondentActivityPage() {
                     <div className="font-mono font-semibold text-white">
                       {log.respondentId}
                     </div>
-                    <div className="text-[10px] text-zinc-400 font-mono">{log.sessionId}</div>
+                    <div className="text-[10px] text-zinc-400 font-mono">
+                      {log.sessionId}
+                    </div>
                   </td>
 
                   <td className="px-5 py-3.5">
                     <div className="font-medium text-zinc-200 line-clamp-1">
                       {log.projectTitle}
                     </div>
-                    <div className="text-[10px] text-zinc-400 font-mono">{log.projectId}</div>
+                    <div className="text-[10px] text-zinc-400 font-mono">
+                      {log.projectId}
+                    </div>
                   </td>
 
                   <td className="px-5 py-3.5">
@@ -178,7 +257,9 @@ export default function RespondentActivityPage() {
                       {getDeviceIcon(log.device)}
                       <span>{log.country}</span>
                     </div>
-                    <div className="text-[10px] text-zinc-400 font-mono">{log.ipAddress}</div>
+                    <div className="text-[10px] text-zinc-400 font-mono">
+                      {log.ipAddress}
+                    </div>
                   </td>
 
                   <td className="px-5 py-3.5">
@@ -201,19 +282,19 @@ export default function RespondentActivityPage() {
                             : "text-emerald-400"
                         }`}
                       >
-                        {log.fraudScore}/100
+                        {fraud}/100
                       </span>
                     </div>
                   </td>
 
                   <td className="px-5 py-3.5 font-mono text-zinc-300">
-                    {Math.floor(log.durationSeconds / 60)}m {log.durationSeconds % 60}s
+                    {Math.floor(duration / 60)}m {duration % 60}s
                   </td>
 
                   <td className="px-5 py-3.5">{getStatusBadge(log.status)}</td>
 
                   <td className="px-5 py-3.5 font-mono font-bold text-emerald-400">
-                    {log.earnedCpi > 0 ? `$${log.earnedCpi.toFixed(2)}` : "—"}
+                    {earned > 0 ? `$${earned.toFixed(2)}` : "—"}
                   </td>
 
                   <td className="px-5 py-3.5 text-right">
@@ -229,6 +310,34 @@ export default function RespondentActivityPage() {
             })}
           </tbody>
         </table>
+
+        {/* Empty / loading state */}
+        {filtered.length === 0 && (
+          <div className="py-14 text-center space-y-2">
+            {isLoading ? (
+              <>
+                <RefreshCw size={26} className="mx-auto text-indigo-400 animate-spin" />
+                <h3 className="text-sm font-semibold text-zinc-300">
+                  Loading sessions...
+                </h3>
+              </>
+            ) : (
+              <>
+                <Users size={28} className="mx-auto text-zinc-600" />
+                <h3 className="text-sm font-semibold text-zinc-300">
+                  {respondentLogs.length === 0
+                    ? "No respondent sessions yet"
+                    : "No sessions match your filters"}
+                </h3>
+                <p className="text-xs text-zinc-400 max-w-sm mx-auto">
+                  {respondentLogs.length === 0
+                    ? "Sessions appear when your respondents start surveys from accepted projects."
+                    : "Try a different search or outcome filter."}
+                </p>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Detail Modal */}
@@ -271,26 +380,28 @@ export default function RespondentActivityPage() {
               </div>
 
               <div className="p-3 rounded-xl bg-zinc-900 border border-zinc-800/80 space-y-1">
-                <span className="text-zinc-500 text-[10px] block">Fraud Detection Analysis</span>
+                <span className="text-zinc-500 text-[10px] block">
+                  Fraud Detection Analysis
+                </span>
                 <div className="flex items-center justify-between">
-                  <span className="text-zinc-300">Machine Learning Risk Index:</span>
+                  <span className="text-zinc-300">Fraud Risk Score:</span>
                   <span className="font-bold font-mono text-zinc-100">
-                    {selectedLog.fraudScore} / 100
+                    {Number(selectedLog.fraudScore ?? 0)} / 100
                   </span>
                 </div>
                 <p className="text-[11px] text-zinc-400">
-                  {selectedLog.fraudScore < 20
-                    ? "Safe score. Residential IP address verified, natural mouse cadence and device fingerprint consistent."
-                    : selectedLog.fraudScore > 80
-                    ? "High Risk Alert: Detected datacenter proxy, suspicious completion speed or duplicate fingerprint."
-                    : "Moderate risk score: Minor timing deviation recorded."}
+                  {Number(selectedLog.fraudScore ?? 0) < 20
+                    ? "Low risk score."
+                    : Number(selectedLog.fraudScore ?? 0) > 80
+                    ? "High risk score. Review this session before approving."
+                    : "Moderate risk score. Minor deviations recorded."}
                 </p>
               </div>
 
               <div className="flex justify-between items-center p-3 rounded-xl bg-zinc-900 border border-zinc-800/80">
                 <span className="text-zinc-400">Outcome CPI Payout:</span>
                 <span className="text-sm font-bold text-emerald-400 font-mono">
-                  ${selectedLog.earnedCpi.toFixed(2)}
+                  ${Number(selectedLog.earnedCpi ?? 0).toFixed(2)}
                 </span>
               </div>
             </div>

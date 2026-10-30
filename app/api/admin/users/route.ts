@@ -2,9 +2,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongoose";
 import User from "@/models/User";
+import { getCurrentUser } from "@/lib/auth";
+import { createAuditLog } from "@/lib/audit-log";
 
 export async function GET(request: NextRequest) {
   try {
+    const admin = await getCurrentUser();
+    if (!admin || (admin.role !== "admin" && admin.role !== "manager")) {
+      return NextResponse.json({ error: "Unauthorized: Admin access required" }, { status: 403 });
+    }
+
     await connectDB();
 
     const { searchParams } = new URL(request.url);
@@ -56,9 +63,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const admin = await getCurrentUser();
+    if (!admin || (admin.role !== "admin" && admin.role !== "manager")) {
+      return NextResponse.json({ error: "Unauthorized: Admin access required" }, { status: 403 });
+    }
+
     await connectDB();
     const body = await request.json();
-    const { name, email, password, role } = body;
+    const { name, email, password, role, supplierCode, respondentId } = body;
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -79,12 +91,26 @@ export async function POST(request: NextRequest) {
       name,
       email: email.toLowerCase(),
       password,
-      role: role || "user",
+      role: role || "client",
+      supplierCode,
+      respondentId,
       emailVerified: true,
     });
 
     const userObj = user.toObject();
     delete (userObj as { password?: string }).password;
+
+    await createAuditLog({
+      actorId: admin._id?.toString(),
+      actorName: admin.name,
+      actorEmail: admin.email,
+      actorRole: admin.role,
+      action: "ADMIN_CREATE_USER",
+      resource: "User",
+      resourceId: user._id.toString(),
+      description: `Admin created user '${user.name}' with role '${user.role}'`,
+      after: userObj,
+    }).catch(() => {});
 
     return NextResponse.json({ user: userObj }, { status: 201 });
   } catch (error) {

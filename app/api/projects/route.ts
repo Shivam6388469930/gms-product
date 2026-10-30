@@ -269,6 +269,16 @@ export async function POST(req: Request) {
     //   },
     // });
 
+    // Extract quotas and overquotaConfig from the raw body (not validated by parseProjectInput)
+    const quotas = Array.isArray(body.quotas) ? body.quotas : [];
+    const overquotaConfig = body.overquotaConfig && typeof body.overquotaConfig === "object"
+      ? {
+          bufferPercent: Number(body.overquotaConfig.bufferPercent) || 0,
+          action: body.overquotaConfig.action || "terminate",
+          redirectUrl: String(body.overquotaConfig.redirectUrl || ""),
+        }
+      : { bufferPercent: 5, action: "terminate", redirectUrl: "" };
+
     const project = await Project.create({
   owner: userId,
 
@@ -290,6 +300,10 @@ export async function POST(req: Request) {
   estimate,
 
   targeting: parsed.value.targeting,
+
+  quotas,
+
+  overquotaConfig,
 
   surveySetup: {
     surveyUrl: "",

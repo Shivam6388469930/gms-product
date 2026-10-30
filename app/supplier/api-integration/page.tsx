@@ -50,9 +50,9 @@ export default function ApiIntegrationPage() {
   );
   const [savedUrlsMsg, setSavedUrlsMsg] = useState(false);
 
-  const handleGenerateKey = (e: React.FormEvent) => {
+  const handleGenerateKey = async (e: React.FormEvent) => {
     e.preventDefault();
-    const secret = generateApiKey(newKeyName);
+    const secret = await generateApiKey(newKeyName);
     setNewlyCreatedSecret(secret);
     setNewKeyName("");
   };
@@ -99,10 +99,10 @@ export default function ApiIntegrationPage() {
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
+            <h3 className="text-base font-bold text-white flex items-center gap-2">
               <Key size={18} className="text-indigo-400" />
               API Access Credentials
-            </h2>
+            </h3>
             <p className="text-xs text-zinc-400 mt-0.5">
               Use Bearer token authorization in the <code className="text-indigo-300">Authorization: Bearer &lt;key&gt;</code> header.
             </p>
@@ -198,10 +198,10 @@ export default function ApiIntegrationPage() {
       {/* Server-to-Server Postbacks Configuration */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 space-y-6">
         <div>
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
+          <h3 className="text-base font-bold text-white flex items-center gap-2">
             <Send size={18} className="text-emerald-400" />
             Server-to-Server (S2S) Postback Endpoints
-          </h2>
+          </h3>
           <p className="text-xs text-zinc-400 mt-0.5">
             When a respondent finishes a survey on GMS, we make a server HTTP GET/POST callback to notify your system.
           </p>
@@ -262,10 +262,10 @@ export default function ApiIntegrationPage() {
 
       {/* Interactive Postback Testing Console */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 space-y-4">
-        <h2 className="text-base font-bold text-white flex items-center gap-2">
+        <h3 className="text-base font-bold text-white flex items-center gap-2">
           <Terminal size={18} className="text-cyan-400" />
           Interactive S2S Postback Simulator
-        </h2>
+        </h3>
         <p className="text-xs text-zinc-400">
           Fire a mock HTTP 200 ping to your callback server to verify parameter parsing and SSL handshake.
         </p>

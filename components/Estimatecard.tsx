@@ -44,7 +44,7 @@ export function EstimateCard({ estimate, loading }: { estimate: Estimate | null;
         </p>
       ) : (
         <div className={loading ? "opacity-60 transition" : "transition"}>
-          <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
+          <div className="divide-y text-black divide-zinc-200 dark:divide-zinc-800">
             <Row label="Available sample" value={estimate.availableSample.toLocaleString()} />
             <Row
               label="Expected completes"

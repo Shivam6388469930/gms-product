@@ -416,75 +416,7 @@ function SurveySetupContent() {
           </div>
         </div>
 
-        {/* =====================================================
-            STEPS
-        ====================================================== */}
-
-        <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Step
-            number="1"
-            title="Audience"
-            completed
-            onClick={() =>
-              router.push(
-                `/projects/${projectId}`
-              )
-            }
-          />
-
-          <Step
-            number="2"
-            title="Feasibility"
-            completed
-            onClick={() =>
-              router.push(
-                `/projects/${projectId}`
-              )
-            }
-          />
-
-          <Step
-            number="3"
-            title="Pricing"
-            completed
-            onClick={() =>
-              router.push(
-                `/projects/${projectId}/price`
-              )
-            }
-          />
-
-          <Step
-            number="4"
-            title="Survey setup"
-            active
-          />
-
-          <Step
-            number="5"
-            title="Sample routing"
-            onClick={() =>
-              router.push(
-                `/project/${projectId}/sample-routing`
-              )
-            }
-          />
-
-          <Step
-            number="6"
-            title="Live fieldwork"
-          />
-
-          <Step
-            number="7"
-            title="Quality"
-          />
-
-          <Step
-            number="8"
-            title="Data & reports"
-          />
-        </div>
+      
 
         {/* =====================================================
             PROJECT SUMMARY

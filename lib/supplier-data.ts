@@ -35,6 +35,7 @@ export interface RespondentActivityLog {
   status: "completed" | "screened_out" | "quota_full" | "quality_reject" | "in_progress";
   earnedCpi: number;
   timestamp: string;
+  date?: string;
 }
 
 export interface SupplierPanel {

@@ -121,9 +121,9 @@ export default function ActiveProjectsPage() {
                         Target: <strong className="text-zinc-200">{project.country}</strong> ({project.audience})
                       </span>
                     </div>
-                    <h2 className="text-base font-bold text-white tracking-tight">
+                    <h3 className="text-base font-bold text-white tracking-tight">
                       {project.title}
-                    </h2>
+                    </h3>
                   </div>
 
                   <div className="flex items-center gap-3 shrink-0">

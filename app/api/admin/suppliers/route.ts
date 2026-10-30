@@ -236,7 +236,7 @@ export async function POST(request: NextRequest) {
     const existingSupply = await Supply.findOne({
       supplierCode,
       country,
-      audienceType,
+      audienceType: audienceType as any,
     }).lean();
 
     if (existingSupply) {
@@ -273,12 +273,12 @@ export async function POST(request: NextRequest) {
     // Create Supply
     // -----------------------------------------
 
-    const supplier = await Supply.create({
+    const supplier: any = await Supply.create({
       supplierName,
       supplierCode,
       supplierEmail,
       country,
-      audienceType,
+      audienceType: audienceType as any,
       audienceDescription,
 
       availableSample,

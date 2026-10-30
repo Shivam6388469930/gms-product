@@ -320,7 +320,7 @@ const RespondentSchema = new Schema<IRespondent>(
  *
  * Keep panelId and panels synchronized.
  */
-RespondentSchema.pre("validate", function (next) {
+RespondentSchema.pre("validate", function () {
   if (this.panelId && (!this.panels || this.panels.length === 0)) {
     this.panels = [this.panelId];
   }
@@ -328,8 +328,6 @@ RespondentSchema.pre("validate", function (next) {
   if (!this.panelId && this.panels && this.panels.length > 0) {
     this.panelId = this.panels[0];
   }
-
-  next();
 });
 
 /*

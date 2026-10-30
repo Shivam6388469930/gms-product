@@ -80,29 +80,29 @@ async function resolveSupply(
   audienceType: string
 ): Promise<ResolvedSupply> {
   // Query actual suppliers from the Supply collection (managed in /suppliers)
-  const dbSuppliers = await Supply.find({
+  const dbSuppliers: any[] = await Supply.find({
     country,
-    audienceType,
+    audienceType: audienceType as any,
     active: true,
     availableSample: { $gt: 0 },
   }).lean();
 
   if (dbSuppliers.length > 0) {
     const totalCapacity = dbSuppliers.reduce(
-      (sum, s: any) => sum + Number(s.availableSample || 0),
+      (sum: number, s: any) => sum + Number(s.availableSample || 0),
       0
     );
 
     const weightedCpi =
       dbSuppliers.reduce(
-        (sum, s: any) =>
+        (sum: number, s: any) =>
           sum + Number(s.baseCpi || 2.0) * Number(s.availableSample || 0),
         0
       ) / Math.max(1, totalCapacity);
 
     const avgIr =
       dbSuppliers.reduce(
-        (sum, s: any) =>
+        (sum: number, s: any) =>
           sum + Number(s.historicalIr || 30) * Number(s.availableSample || 0),
         0
       ) / Math.max(1, totalCapacity);

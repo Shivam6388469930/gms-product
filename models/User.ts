@@ -33,6 +33,7 @@ export interface IUser extends Document {
   supplierId?: mongoose.Types.ObjectId;
 
   respondentId?: string;
+  mustChangePassword:boolean;
 
   createdAt: Date;
   updatedAt: Date;
@@ -127,6 +128,10 @@ const UserSchema = new Schema<IUser>(
       trim: true,
       index: true,
     },
+    mustChangePassword: {
+      type: Boolean,
+      default: false,
+    }
   },
   {
     timestamps: true,

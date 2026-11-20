@@ -12,7 +12,7 @@ export interface ISupplierAllocation extends Document {
   allocatedCpi: number;
   routingPercent: number;
   priority: number;
-  status: "incoming" | "active" | "paused" | "completed";
+  status: "incoming" | "active" | "paused" | "completed" | "declined" | "removed";
   actualStarts: number;
   actualCompletes: number;
   actualTerminates: number;
@@ -74,7 +74,7 @@ const SupplierAllocationSchema = new Schema<ISupplierAllocation>(
     },
     status: {
       type: String,
-      enum: ["incoming", "active", "paused", "completed"],
+      enum: ["incoming", "active", "paused", "completed", "declined", "removed"],
       default: "active",
       index: true,
     },

@@ -1,6 +1,7 @@
 // src/app/api/auth/refresh/route.ts
 
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 import { connectDB } from "@/config/db";
 import RefreshToken from "@/models/RefreshToken";
@@ -16,15 +17,8 @@ export async function POST() {
   try {
     await connectDB();
 
-    const refreshToken =
-      (
-        await import("next/headers")
-      ).cookies();
-
-    const token =
-      (await refreshToken).get(
-        "refreshToken"
-      )?.value;
+    const cookieStore = await cookies();
+    const token = cookieStore.get("refreshToken")?.value;
 
     if (!token) {
       return NextResponse.json(
@@ -107,34 +101,23 @@ export async function POST() {
           "Token refreshed successfully",
       });
 
-    response.cookies.set(
-      "accessToken",
-      newAccessToken,
-      {
-        httpOnly: true,
-        secure:
-          process.env.NODE_ENV ===
-          "production",
-        sameSite: "lax",
-        path: "/",
-        maxAge: 15 * 60,
-      }
-    );
+    const cookieMaxAge = 7 * 24 * 60 * 60; // 7 days
 
-    response.cookies.set(
-      "refreshToken",
-      newRefreshToken,
-      {
-        httpOnly: true,
-        secure:
-          process.env.NODE_ENV ===
-          "production",
-        sameSite: "lax",
-        path: "/api/auth",
-        maxAge:
-          7 * 24 * 60 * 60,
-      }
-    );
+    response.cookies.set("accessToken", newAccessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: cookieMaxAge,
+    });
+
+    response.cookies.set("refreshToken", newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: cookieMaxAge,
+    });
 
     return response;
   } catch (error) {

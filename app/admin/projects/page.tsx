@@ -1,27 +1,19 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import {
   FolderKanban,
   Play,
   Pause,
-  StopCircle,
-  Plus,
   Search,
   RefreshCw,
   Users,
-  DollarSign,
-  TrendingUp,
-  Sliders,
-  ExternalLink,
-  ChevronRight,
-  Shield,
-  Clock,
-  Sparkles,
+  Trash2,
 } from "lucide-react";
 
 interface ProjectItem {
   _id: string;
+  projectId?: string;
   surveyTitle: string;
   country: string;
   audienceType: string;
@@ -45,6 +37,13 @@ interface ProjectItem {
     name: string;
     email: string;
   };
+  supplierAllocations?: {
+    id: string;
+    name: string;
+    email: string;
+    supplierCode: string;
+    status: string;
+  }[];
   createdAt: string;
 }
 
@@ -64,29 +63,59 @@ export default function ProjectsAdminPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [audienceFilter, setAudienceFilter] = useState("");
+  const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
+  const [removingSupplierId, setRemovingSupplierId] = useState<string | null>(null);
+  const [supplierError, setSupplierError] = useState("");
 
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (statusFilter) params.set("status", statusFilter);
+    if (audienceFilter) params.set("audienceType", audienceFilter);
+
+    const response = await fetch(`/api/admin/projects?${params.toString()}`);
+    const data = await response.json();
+    if (!response.ok || data.error) {
+      throw new Error(data.error || "Failed to fetch projects");
+    }
+    return data;
+  }, [search, statusFilter, audienceFilter]);
+
+  useEffect(() => {
+    let active = true;
+    fetchProjects()
+      .then((data) => {
+        if (!active) return;
+        setProjects(data.projects || []);
+        if (data.stats) setStats(data.stats);
+      })
+      .catch((error) => {
+        console.error("Error fetching projects:", error);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [fetchProjects]);
+
+  const refreshProjects = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (search) params.set("search", search);
-      if (statusFilter) params.set("status", statusFilter);
-      if (audienceFilter) params.set("audienceType", audienceFilter);
-
-      const res = await fetch(`/api/admin/projects?${params.toString()}`);
-      const data = await res.json();
+      const data = await fetchProjects();
       setProjects(data.projects || []);
       if (data.stats) setStats(data.stats);
-    } catch (err) {
-      console.error("Error fetching projects:", err);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      setSupplierError(
+        error instanceof Error ? error.message : "Failed to fetch projects"
+      );
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchProjects();
-  }, [statusFilter, audienceFilter]);
 
   const handleStatusChange = async (id: string, newStatus: string) => {
     try {
@@ -95,9 +124,41 @@ export default function ProjectsAdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
-      if (res.ok) fetchProjects();
+      if (res.ok) await refreshProjects();
     } catch (err) {
       console.error("Error updating project status:", err);
+    }
+  };
+
+  const handleRemoveSupplier = async (
+    projectId: string,
+    supplier: NonNullable<ProjectItem["supplierAllocations"]>[number]
+  ) => {
+    if (!window.confirm(`Remove ${supplier.name} from this project?`)) return;
+
+    setRemovingSupplierId(supplier.id);
+    setSupplierError("");
+    try {
+      const response = await fetch(`/api/admin/projects/${projectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "removeSupplier",
+          supplierId: supplier.id,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to remove supplier");
+      }
+      await refreshProjects();
+    } catch (error) {
+      console.error("Failed to remove supplier from project:", error);
+      setSupplierError(
+        error instanceof Error ? error.message : "Failed to remove supplier"
+      );
+    } finally {
+      setRemovingSupplierId(null);
     }
   };
 
@@ -152,7 +213,7 @@ export default function ProjectsAdminPage() {
           </p>
         </div>
         <button
-          onClick={fetchProjects}
+          onClick={refreshProjects}
           style={{
             display: "flex",
             alignItems: "center",
@@ -169,6 +230,22 @@ export default function ProjectsAdminPage() {
           <RefreshCw size={14} /> Refresh
         </button>
       </div>
+
+      {supplierError && (
+        <div
+          role="alert"
+          style={{
+            marginBottom: 16,
+            border: "1px solid rgba(239,68,68,0.35)",
+            borderRadius: 8,
+            padding: "10px 12px",
+            color: "#fca5a5",
+            fontSize: 12,
+          }}
+        >
+          {supplierError}
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div
@@ -237,7 +314,7 @@ export default function ProjectsAdminPage() {
             placeholder="Search project title or market country..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && fetchProjects()}
+            onKeyDown={(e) => e.key === "Enter" && refreshProjects()}
             style={{
               background: "transparent",
               border: "none",
@@ -334,16 +411,16 @@ export default function ProjectsAdminPage() {
                   const pct = Math.min(100, Math.round((completes / target) * 100));
 
                   return (
+                    <React.Fragment key={proj._id}>
                     <tr
-                      key={proj._id}
                       style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
                       onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.02)")}
                       onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                     >
                       <td style={{ padding: "12px 16px" }}>
                         <div style={{ color: "#fff", fontWeight: 600, fontSize: 13 }}>{proj.surveyTitle}</div>
-                        <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>
-                          ID: {proj._id.slice(0, 10)}...
+                        <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontFamily: "monospace" }}>
+                          PID: {proj.projectId || proj._id.slice(0, 10)}
                         </div>
                       </td>
                       <td style={{ padding: "12px 16px" }}>
@@ -370,6 +447,9 @@ export default function ProjectsAdminPage() {
                             <div style={{ width: `${pct}%`, height: "100%", background: "linear-gradient(90deg, #6366f1, #10b981)", borderRadius: 3 }} />
                           </div>
                           <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>{pct}%</span>
+                        </div>
+                        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>
+                          Starts: {proj.progress?.starts || 0} • Term: {proj.progress?.screenouts || 0} • Quota: {proj.progress?.quotaFull || 0}
                         </div>
                       </td>
                       <td style={{ padding: "12px 16px" }}>
@@ -426,9 +506,103 @@ export default function ProjectsAdminPage() {
                               <Play size={12} />
                             </button>
                           )}
+                          <button
+                            onClick={() =>
+                              setExpandedProjectId((current) =>
+                                current === proj._id ? null : proj._id
+                              )
+                            }
+                            title="Manage suppliers"
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
+                              background: "rgba(99,102,241,0.12)",
+                              border: "1px solid rgba(99,102,241,0.3)",
+                              color: "#a5b4fc",
+                              padding: "4px 8px",
+                              borderRadius: 6,
+                              cursor: "pointer",
+                              fontSize: 11,
+                            }}
+                          >
+                            <Users size={12} />
+                            {proj.supplierAllocations?.length || 0}
+                          </button>
                         </div>
                       </td>
                     </tr>
+                    {expandedProjectId === proj._id && (
+                      <tr>
+                        <td
+                          colSpan={8}
+                          style={{
+                            padding: "12px 16px",
+                            background: "rgba(255,255,255,0.025)",
+                          }}
+                        >
+                          <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, marginBottom: 8 }}>
+                            Eligible suppliers and current project assignments
+                          </div>
+                          {proj.supplierAllocations?.length ? (
+                            <div style={{ display: "grid", gap: 8 }}>
+                              {proj.supplierAllocations.map((supplier) => (
+                                <div
+                                  key={supplier.id}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    gap: 12,
+                                    border: "1px solid rgba(255,255,255,0.08)",
+                                    borderRadius: 8,
+                                    padding: "8px 10px",
+                                  }}
+                                >
+                                  <div>
+                                    <div style={{ color: "#fff", fontSize: 12, fontWeight: 600 }}>
+                                      {supplier.name} <span style={{ color: "#818cf8" }}>({supplier.supplierCode})</span>
+                                    </div>
+                                    <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 11 }}>
+                                      {supplier.email} · {supplier.status}
+                                    </div>
+                                  </div>
+                                  {supplier.status === "removed" ? (
+                                    <span style={{ color: "#fca5a5", fontSize: 11 }}>Removed</span>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleRemoveSupplier(proj._id, supplier)}
+                                      disabled={removingSupplierId === supplier.id}
+                                      style={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: 5,
+                                        background: "rgba(239,68,68,0.12)",
+                                        border: "1px solid rgba(239,68,68,0.3)",
+                                        color: "#fca5a5",
+                                        padding: "5px 8px",
+                                        borderRadius: 6,
+                                        cursor: "pointer",
+                                        fontSize: 11,
+                                        opacity: removingSupplierId === supplier.id ? 0.6 : 1,
+                                      }}
+                                    >
+                                      <Trash2 size={12} />
+                                      {removingSupplierId === supplier.id ? "Removing..." : "Remove"}
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>
+                              No suppliers are assigned yet.
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
                   );
                 })
               )}

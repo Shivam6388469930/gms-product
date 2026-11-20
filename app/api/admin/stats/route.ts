@@ -22,13 +22,11 @@ export async function GET() {
       recentLogs,
       usersByRole,
       projectsByStatus,
-      totalRespondents,
-      completedSessions,
-      screenoutSessions,
-      quotaFullSessions,
-      qualityRejects,
-      fraudBlocks,
+      sessionStatusAgg,
       transactionsAgg,
+      blockedUsers,
+      verifiedUsers,
+      fraudRulesActive,
     ] = await Promise.all([
       User.countDocuments(),
       Supply.countDocuments({ active: true }),
@@ -37,16 +35,9 @@ export async function GET() {
       AuditLog.find().sort({ createdAt: -1 }).limit(10).lean(),
       User.aggregate([{ $group: { _id: "$role", count: { $sum: 1 } } }]),
       Project.aggregate([{ $group: { _id: "$status", count: { $sum: 1 } } }]),
-      RespondentSession.countDocuments(),
-      RespondentSession.countDocuments({ status: "completed" }),
-      RespondentSession.countDocuments({ status: "screened_out" }),
-      RespondentSession.countDocuments({ status: "quota_full" }),
-      RespondentSession.countDocuments({ status: "quality_reject" }),
-      RespondentSession.countDocuments({
-        status: {
-          $in: ["blocked_duplicate_ip", "blocked_exclusion", "blocked_fingerprint"],
-        },
-      }),
+      RespondentSession.aggregate([
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+      ]),
       Transaction.aggregate([
         {
           $group: {
@@ -56,11 +47,26 @@ export async function GET() {
           },
         },
       ]),
+      User.countDocuments({ isBlocked: true }),
+      User.countDocuments({ emailVerified: true }),
+      FraudRule.countDocuments({ active: true }),
     ]);
 
-    const blockedUsers = await User.countDocuments({ isBlocked: true });
-    const verifiedUsers = await User.countDocuments({ emailVerified: true });
-    const fraudRulesActive = await FraudRule.countDocuments({ active: true });
+    const statusMap = new Map<string, number>();
+    let totalRespondents = 0;
+    for (const item of sessionStatusAgg) {
+      statusMap.set(String(item._id), item.count);
+      totalRespondents += item.count;
+    }
+
+    const completedSessions = statusMap.get("completed") || 0;
+    const screenoutSessions = (statusMap.get("screened_out") || 0) + (statusMap.get("terminate") || 0) + (statusMap.get("terminated") || 0);
+    const quotaFullSessions = statusMap.get("quota_full") || 0;
+    const qualityRejects = statusMap.get("quality_reject") || 0;
+    const fraudBlocks =
+      (statusMap.get("blocked_duplicate_ip") || 0) +
+      (statusMap.get("blocked_exclusion") || 0) +
+      (statusMap.get("blocked_fingerprint") || 0);
 
     // Conversion rate
     const conversionRate =

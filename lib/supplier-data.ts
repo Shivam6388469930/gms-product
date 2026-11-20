@@ -17,6 +17,13 @@ export interface SupplierProject {
   receivedDate: string;
   deadlineDate: string;
   surveyUrlTemplate: string;
+  surveyUrl?: string;
+  entryUrl?: string;
+  completeRedirectUrl?: string;
+  disqualifiedRedirectUrl?: string;
+  terminateRedirectUrl?: string;
+  quotaRedirectUrl?: string;
+  securityTerminateRedirectUrl?: string;
   qualityScoreRequired: number;
   description: string;
 }

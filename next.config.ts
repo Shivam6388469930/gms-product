@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
     agentFeedback: true,
+    optimizePackageImports: ["lucide-react"],
   },
   cacheComponents: true,
   partialPrefetching: true,

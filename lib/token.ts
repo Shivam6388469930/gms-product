@@ -21,6 +21,9 @@ export function createAccessToken(userId: string, role?: string): string {
     throw new Error("JWT_ACCESS_SECRET is missing");
   }
 
+  const rawExpires = process.env.ACCESS_TOKEN_EXPIRES || "7d";
+  const expiresIn = rawExpires === "15m" ? "7d" : rawExpires;
+
   return jwt.sign(
     {
       userId,
@@ -29,7 +32,7 @@ export function createAccessToken(userId: string, role?: string): string {
     },
     secret,
     {
-      expiresIn: "15m",
+      expiresIn: expiresIn as any,
     }
   );
 }

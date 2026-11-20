@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 import { AuthShell } from "@/components/AuthShell";
 import {
@@ -36,15 +36,37 @@ export default function LoginPage() {
 }
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
-  const returnUrl = searchParams.get("returnUrl");
+  // Only allow safe, internal return URLs (no external sites, no auth pages -> avoids loops)
+  const rawReturn = searchParams.get("returnUrl");
+  const returnUrl =
+    rawReturn &&
+      rawReturn.startsWith("/") &&
+      !rawReturn.startsWith("//") &&
+      !rawReturn.startsWith("/auth")
+      ? rawReturn
+      : null;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Reset stale loading state on mount and when the page is restored
+  // from the browser back/forward cache (bfcache).
+  useEffect(() => {
+    setLoading(false);
+
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        setLoading(false);
+      }
+    };
+
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   function getRedirectForRole(role?: string): string {
     if (returnUrl) {
@@ -63,15 +85,14 @@ function LoginForm() {
         return "/respondent/dashboard";
 
       case "client":
+      case "buyer":
       case "user":
       default:
         return "/project";
     }
   }
 
-  async function handleSubmit(
-    e: React.FormEvent<HTMLFormElement>
-  ) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     // Prevent double-click / duplicate login requests.
@@ -83,44 +104,26 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      const { ok, data } = await postJSON(
-        "/api/auth/login",
-        {
-          email,
-          password,
-        }
-      );
+      const { ok, data } = await postJSON("/api/auth/login", {
+        email,
+        password,
+      });
 
       if (!ok) {
-        setError(
-          data?.message ||
-            "Email or password is incorrect."
-        );
-
+        setError(data?.message || "Email or password is incorrect.");
         setLoading(false);
         return;
       }
 
-      const user = data.user as
-        | {
-            role?: string;
-          }
-        | undefined;
+      const user = data.user as { role?: string } | undefined;
+      const destination = getRedirectForRole(user?.role);
 
-      const destination = getRedirectForRole(
-        user?.role
-      );
-
-      // Navigate away after successful login.
-      // Do not reset loading here because the page is leaving.
-      router.replace(destination);
-    } catch (error) {
-      console.error("LOGIN_ERROR:", error);
-
-      setError(
-        "An unexpected error occurred. Please try again."
-      );
-
+      // Hard navigation: bypasses the Next.js Router Cache so a stale
+      // "logged-out" redirect can't bounce the user back to /auth/login.
+      window.location.assign(destination);
+    } catch (err) {
+      console.error("LOGIN_ERROR:", err);
+      setError("An unexpected error occurred. Please try again.");
       setLoading(false);
     }
   }
@@ -131,29 +134,20 @@ function LoginForm() {
       footer={
         <>
           New to the platform?{" "}
-          <Link
-            href="/auth/register"
-            className={linkClass}
-          >
+          <Link href="/auth/register" className={linkClass}>
             Create an account
           </Link>
         </>
       }
     >
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-4"
-        noValidate
-      >
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         <Field
           label="Email"
           type="email"
           autoComplete="email"
           placeholder="you@example.com"
           value={email}
-          onChange={(e) =>
-            setEmail(e.target.value)
-          }
+          onChange={(e) => setEmail(e.target.value)}
           disabled={loading}
         />
 
@@ -169,18 +163,13 @@ function LoginForm() {
             </Link>
           }
           value={password}
-          onChange={(e) =>
-            setPassword(e.target.value)
-          }
+          onChange={(e) => setPassword(e.target.value)}
           disabled={loading}
         />
 
         <ErrorAlert message={error} />
 
-        <SubmitButton
-          loading={loading}
-          loadingText="Logging in..."
-        >
+        <SubmitButton loading={loading} loadingText="Logging in...">
           Sign in
         </SubmitButton>
       </form>

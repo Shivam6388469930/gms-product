@@ -16,7 +16,7 @@ export function SelectField({
       </label>
       <select id={id} {...props} className={inputClass}>
         {options.map((o) => (
-          <option key={o.value} value={o.value}>
+          <option key={o.value} value={o.value} className="text-black">
             {o.label}
           </option>
         ))}

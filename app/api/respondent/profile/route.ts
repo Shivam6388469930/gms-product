@@ -579,9 +579,11 @@ export async function GET(_request: NextRequest) {
 
     const liveProjects =
       await Project.find({
-        status: {
-          $in: ["live", "draft"],
-        },
+        status: "live",
+        $or: [
+          { "surveySetup.surveyUrl": { $exists: true, $ne: "" } },
+          { surveyUrl: { $exists: true, $ne: "" } },
+        ],
       })
         .sort({
           createdAt: -1,

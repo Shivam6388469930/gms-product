@@ -40,13 +40,21 @@ export async function POST() {
         message: "Logout successful",
       });
 
-    response.cookies.delete(
-      "accessToken"
-    );
+    response.cookies.set("accessToken", "", {
+      path: "/",
+      maxAge: 0,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
 
-    response.cookies.delete(
-      "refreshToken"
-    );
+    response.cookies.set("refreshToken", "", {
+      path: "/",
+      maxAge: 0,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
 
     return response;
   } catch (error) {

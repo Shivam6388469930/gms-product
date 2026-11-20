@@ -84,13 +84,6 @@ export async function GET(
       routingCount > 0 &&
       totalAllocated === project.sampleSize;
 
-    /*
-     * Pricing / feasibility are represented by the
-     * project's estimate snapshot.
-     *
-     * We require the estimate to exist and contain
-     * meaningful pricing/feasibility values.
-     */
     const estimate = project.estimate as
       | Record<string, unknown>
       | undefined;
@@ -106,15 +99,15 @@ export async function GET(
 
     const screenerConfig =
       project.screener &&
-      Array.isArray(project.screener.questions) &&
-      project.screener.questions.length > 0
+        Array.isArray(project.screener.questions) &&
+        project.screener.questions.length > 0
         ? project.screener
         : {
-            enabled: true,
-            blockDuplicateIp: true,
-            strictIpTermination: true,
-            questions: generateDefaultScreenerQuestions(project),
-          };
+          enabled: true,
+          blockDuplicateIp: true,
+          strictIpTermination: true,
+          questions: generateDefaultScreenerQuestions(project),
+        };
 
     const checks = {
       feasibility: feasibilityReady,

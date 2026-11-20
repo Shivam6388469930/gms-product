@@ -8,6 +8,7 @@ import Supply from "@/models/Supply";
 import ProjectSupply from "@/models/ProjectSupply";
 import SupplierAllocation from "@/models/SupplierAllocation";
 import { getCurrentUser } from "@/lib/auth";
+import { generateRedirectUrls, getBaseUrl } from "@/lib/survey-urls";
 
 /* -------------------------------------------------------------------------- */
 /* Helpers                                                                    */
@@ -87,7 +88,7 @@ export async function GET(request: NextRequest) {
 
     const { supplyDoc, supplierCode } = await resolveSupply(currentUser);
 
-    const baseUrl = process.env.APP_URL || "http://localhost:3000";
+    const baseUrl = getBaseUrl();
 
     const allocQuery: Record<string, any> = {};
     if (!isAdmin) {
@@ -156,10 +157,12 @@ export async function GET(request: NextRequest) {
       handledProjectIds.add(pidStr);
 
       // Declined projects are hidden everywhere and never come back as incoming
-      if (alloc.status === "declined") continue;
+      if (alloc.status === "declined" || alloc.status === "removed") continue;
 
       const status =
-        alloc.status === "paused" || p.status === "paused"
+        alloc.status === "incoming"
+          ? "incoming"
+          : alloc.status === "paused" || p.status === "paused"
           ? "paused"
           : alloc.status === "completed" || p.status === "completed"
           ? "completed"
@@ -169,11 +172,15 @@ export async function GET(request: NextRequest) {
       const sampleDel = alloc.actualCompletes || p.progress?.completes || 0;
       const cpiVal = alloc.allocatedCpi || p.cpi || supplyDoc?.baseCpi || 2.5;
 
+      const displayPid = p.projectId || `PRJ-${pidStr.slice(-4).toUpperCase()}`;
+      const projectSurveyUrl = (p.surveySetup?.surveyUrl || p.surveyUrl || "").trim();
+      const redirectUrls = generateRedirectUrls(displayPid, baseUrl);
+
       allocatedProjects.push({
         id: pidStr,
-        projectId: `PRJ-${pidStr.slice(-4).toUpperCase()}`,
+        projectId: displayPid,
         title: p.surveyTitle || "Live Research Study",
-        clientName: p.owner?.name || "Client Research Team",
+        clientName: p.clientName || p.owner?.name || "Client Research Team",
         audience: (p.audienceType || "consumer").toLowerCase(),
         country: p.country || "US",
         sampleRequired: sampleReq,
@@ -183,17 +190,22 @@ export async function GET(request: NextRequest) {
         loi: p.loi || 10,
         ir: p.ir || 30,
         status,
-        receivedDate: new Date(alloc.allocatedAt || p.createdAt)
+        receivedDate: new Date(p.startDate || alloc.allocatedAt || p.createdAt)
           .toISOString()
           .split("T")[0],
         deadlineDate: new Date(
-          new Date(p.createdAt || Date.now()).getTime() + 14 * 86400000
+          p.endDate || (new Date(p.createdAt || Date.now()).getTime() + 14 * 86400000)
         )
           .toISOString()
           .split("T")[0],
-        surveyUrlTemplate: `${baseUrl}/survey/start?pid=${pidStr}&sup=${
-          supplierCode || "SUP"
-        }&rid=[RID]`,
+        surveyUrl: projectSurveyUrl,
+        surveyUrlTemplate: `${baseUrl}/api/survey/start?pid=${displayPid}&rid=[RID]`,
+        entryUrl: redirectUrls.entryUrl,
+        completeRedirectUrl: redirectUrls.completeUrl,
+        disqualifiedRedirectUrl: redirectUrls.disqualifiedUrl,
+        terminateRedirectUrl: redirectUrls.terminateUrl,
+        quotaRedirectUrl: redirectUrls.quotaUrl,
+        securityTerminateRedirectUrl: redirectUrls.securityTerminateUrl,
         qualityScoreRequired: 80,
         description:
           p.audienceDescription ||
@@ -204,25 +216,74 @@ export async function GET(request: NextRequest) {
     }
 
     // Projects with no decision yet are incoming opportunities
-    const unallocatedProjects: any[] = await Project.find({
-      _id: { $nin: Array.from(handledProjectIds) },
-      status: { $in: ["live", "draft", "paused"] },
-    })
-      .populate("owner", "name email")
-      .sort({ createdAt: -1 })
-      .limit(20)
-      .lean();
+    const supplyOwnerOr: Record<string, any>[] = [];
+    if (supplierCode) supplyOwnerOr.push({ supplierCode });
+    if (currentUser.supplierId) {
+      supplyOwnerOr.push({ _id: currentUser.supplierId });
+    }
+    if (currentUser.name) {
+      supplyOwnerOr.push({
+        supplierName: {
+          $regex: new RegExp(`^${escapeRegex(String(currentUser.name))}$`, "i"),
+        },
+      });
+    }
+
+    const eligibleSupplies = supplyOwnerOr.length
+      ? await Supply.find({
+          $and: [
+            { $or: supplyOwnerOr },
+            { active: true, availableSample: { $gt: 0 } },
+          ],
+        })
+          .select("country audienceType")
+          .lean()
+      : [];
+
+    const marketMatches = eligibleSupplies.map((supply) => ({
+      country: {
+        $regex: `^${escapeRegex(supply.country)}$`,
+        $options: "i",
+      },
+      audienceType: {
+        $regex: `^${escapeRegex(supply.audienceType)}$`,
+        $options: "i",
+      },
+    }));
+
+    const unallocatedProjects: any[] = marketMatches.length
+      ? await Project.find({
+          _id: { $nin: Array.from(handledProjectIds) },
+          status: { $in: ["live", "draft", "paused"] },
+          $and: [
+            { $or: marketMatches },
+            {
+              $or: [
+                { "surveySetup.surveyUrl": { $exists: true, $ne: "" } },
+                { surveyUrl: { $exists: true, $ne: "" } },
+              ],
+            },
+          ],
+        })
+          .populate("owner", "name email")
+          .sort({ createdAt: -1 })
+          .limit(20)
+          .lean()
+      : [];
 
     const incomingProjects = unallocatedProjects.map((p: any) => {
       const pidStr = p._id.toString();
       const sampleReq = p.sampleSize || 250;
       const cpiVal = Number(p.estimate?.estimatedCpi || 2.5);
+      const displayPid = p.projectId || `PRJ-${pidStr.slice(-4).toUpperCase()}`;
+      const projectSurveyUrl = (p.surveySetup?.surveyUrl || p.surveyUrl || "").trim();
+      const redirectUrls = generateRedirectUrls(displayPid, baseUrl);
 
       return {
         id: pidStr,
-        projectId: `PRJ-${pidStr.slice(-4).toUpperCase()}`,
+        projectId: displayPid,
         title: p.surveyTitle || "Targeted Consumer Survey",
-        clientName: p.owner?.name || "Corporate Client",
+        clientName: p.clientName || p.owner?.name || "Corporate Client",
         audience: (p.audienceType || "consumer").toLowerCase(),
         country: p.country || "US",
         sampleRequired: sampleReq,
@@ -232,17 +293,22 @@ export async function GET(request: NextRequest) {
         loi: p.loi || 10,
         ir: p.ir || 30,
         status: "incoming",
-        receivedDate: new Date(p.createdAt || Date.now())
+        receivedDate: new Date(p.startDate || p.createdAt || Date.now())
           .toISOString()
           .split("T")[0],
         deadlineDate: new Date(
-          new Date(p.createdAt || Date.now()).getTime() + 14 * 86400000
+          p.endDate || (new Date(p.createdAt || Date.now()).getTime() + 14 * 86400000)
         )
           .toISOString()
           .split("T")[0],
-        surveyUrlTemplate: `${baseUrl}/survey/start?pid=${pidStr}&sup=${
-          supplierCode || "SUP"
-        }&rid=[RID]`,
+        surveyUrl: projectSurveyUrl,
+        surveyUrlTemplate: `${baseUrl}/api/survey/start?pid=${displayPid}&rid=[RID]`,
+        entryUrl: redirectUrls.entryUrl,
+        completeRedirectUrl: redirectUrls.completeUrl,
+        disqualifiedRedirectUrl: redirectUrls.disqualifiedUrl,
+        terminateRedirectUrl: redirectUrls.terminateUrl,
+        quotaRedirectUrl: redirectUrls.quotaUrl,
+        securityTerminateRedirectUrl: redirectUrls.securityTerminateUrl,
         qualityScoreRequired: 80,
         description:
           p.audienceDescription ||
@@ -279,6 +345,147 @@ export async function GET(request: NextRequest) {
       },
       { status: 500 }
     );
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* POST  Create / Add Survey directly from Supplier or Admin                  */
+/* -------------------------------------------------------------------------- */
+
+export async function POST(request: NextRequest) {
+  try {
+    await connectDB();
+
+    const currentUser: any = await getCurrentUser();
+    if (!currentUser) return fail("Unauthorized", 401);
+
+    const isSupplier = currentUser.role === "supplier";
+    const isAdmin = currentUser.role === "admin" || currentUser.role === "manager";
+
+    if (!isSupplier && !isAdmin) {
+      return fail("Forbidden: Supplier or Admin access required", 403);
+    }
+
+    if (currentUser.isBlocked) {
+      return fail("Your account is blocked", 403);
+    }
+
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return fail("Invalid JSON payload", 400);
+    }
+
+    const { supplyDoc, supplierCode } = await resolveSupply(currentUser);
+
+    const surveyTitle = String(body.surveyName || body.surveyTitle || body.title || "").trim();
+    if (!surveyTitle) {
+      return fail("Survey Name / Title is required", 400);
+    }
+
+    const rawSurveyUrl = String(body.surveyUrl || "").trim();
+    const projectIdInput = String(body.projectId || "").trim();
+    const clientName = String(body.client || body.clientName || "").trim() || "Client Research Team";
+    const country = String(body.country || "US").trim().toUpperCase();
+    const targetN = Math.max(10, Number(body.targetN || body.sampleSize || body.sampleRequired || 100));
+    const loi = Math.max(1, Number(body.loi || 10));
+    const ir = Math.min(100, Math.max(1, Number(body.ir || 30)));
+    const cpi = Math.max(0.1, Number(body.cpi || supplyDoc?.baseCpi || 2.5));
+    const audienceType = String(body.audience || body.audienceType || "consumer").toLowerCase();
+    const validAudience = ["consumer", "b2b", "healthcare"].includes(audienceType) ? audienceType : "consumer";
+    const status = String(body.status || "live").toLowerCase() === "live" ? "live" : "draft";
+
+    const startDate = body.startDate ? new Date(body.startDate) : new Date();
+    const endDate = body.endDate
+      ? new Date(body.endDate)
+      : new Date(Date.now() + 14 * 86400000);
+
+    // Auto-generate clean ID if not provided
+    const finalProjectId = projectIdInput || ("GMS" + Math.floor(10000 + Math.random() * 90000));
+
+    // Create the Project in database
+    const project = await Project.create({
+      owner: currentUser._id,
+      buyerId: currentUser._id,
+      projectId: finalProjectId,
+      clientName,
+      surveyTitle,
+      country,
+      audienceType: validAudience,
+      audienceDescription: body.description || `Targeting ${validAudience} audience in ${country}`,
+      sampleSize: targetN,
+      loi,
+      ir,
+      startDate,
+      endDate,
+      status,
+      surveyUrl: rawSurveyUrl,
+      respondentParam: body.respondentParam || "rid",
+      estimate: {
+        estimatedCpi: cpi,
+        totalCost: targetN * cpi,
+      },
+      surveySetup: {
+        surveyUrl: rawSurveyUrl,
+        surveyType: "external",
+        estimatedLoi: loi,
+        status: rawSurveyUrl ? "ready" : "not_configured",
+      },
+      progress: {
+        starts: 0,
+        completes: 0,
+        screenouts: 0,
+        quotaFull: 0,
+        qualityRejects: 0,
+        spend: 0,
+      },
+    });
+
+    // Create SupplierAllocation so supplier immediately owns & tracks this survey
+    const code = supplierCode || currentUser.supplierCode || "SUP-001";
+    await SupplierAllocation.create({
+      project: project._id,
+      supplierId: currentUser._id,
+      supplierCode: code,
+      supply: supplyDoc?._id,
+      allocatedSample: targetN,
+      allocatedCpi: cpi,
+      routingPercent: 100,
+      priority: 1,
+      status: "active",
+      allocatedAt: new Date(),
+    });
+
+    const baseUrl = getBaseUrl();
+    const redirectUrls = generateRedirectUrls(finalProjectId, baseUrl);
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Survey project created successfully",
+        project: {
+          id: project._id.toString(),
+          projectId: finalProjectId,
+          surveyTitle,
+          clientName,
+          country,
+          sampleRequired: targetN,
+          loi,
+          ir,
+          cpi,
+          status,
+          surveyUrl: rawSurveyUrl,
+          entryUrl: redirectUrls.entryUrl,
+          completeRedirectUrl: redirectUrls.completeUrl,
+          terminateRedirectUrl: redirectUrls.terminateUrl,
+          quotaRedirectUrl: redirectUrls.quotaUrl,
+        },
+        redirectUrls,
+      },
+      { status: 201 }
+    );
+  } catch (error: any) {
+    console.error("POST /api/supplier/projects error:", error);
+    return fail(error?.message || "Failed to create survey project", 500);
   }
 }
 
@@ -335,6 +542,21 @@ export async function PATCH(request: NextRequest) {
 
     /* ------------------------------ ACCEPT -------------------------------- */
     if (action === "accept") {
+      if (existing?.status === "removed") {
+        return fail("This project was removed by an administrator", 409);
+      }
+
+      if (existing?.status === "incoming") {
+        existing.status = "active";
+        existing.allocatedAt = new Date();
+        await existing.save();
+        return NextResponse.json({
+          success: true,
+          message: "Project accepted and activated",
+          status: "active",
+        });
+      }
+
       if (existing && existing.status !== "declined") {
         // Already accepted: make sure it is running unless it was completed
         if (existing.status === "paused") {

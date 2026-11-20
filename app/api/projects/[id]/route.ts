@@ -1402,20 +1402,22 @@ export async function GET(
     const { id } =
       await params;
 
-    if (
-      !id ||
-      !isValidObjectId(id)
-    ) {
+    if (!id || typeof id !== "string") {
       return fail(
         "Invalid project ID",
         400,
       );
     }
 
+    const orQuery: any[] = [{ projectId: id.trim() }];
+    if (isValidObjectId(id.trim())) {
+      orQuery.push({ _id: id.trim() });
+    }
+
     const project =
-      await Project.findById(
-        id,
-      ).lean();
+      await Project.findOne({
+        $or: orQuery,
+      }).lean();
 
     if (!project) {
       return fail(

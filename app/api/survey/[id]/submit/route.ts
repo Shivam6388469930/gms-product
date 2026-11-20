@@ -8,6 +8,7 @@ import {
   generateDefaultScreenerQuestions,
   evaluateScreener,
 } from "@/lib/screener-helper";
+import { replaceRespondentPlaceholder, isRespondentPlaceholder } from "@/lib/survey-urls";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -33,9 +34,10 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     const body = await req.json();
     const { answers, respondentId, supplierCode, testIp } = body;
 
-    const rid =
-      respondentId ||
-      `RESP_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const rawRid = body.respondentId || body.rid || "";
+    const rid = (!rawRid || isRespondentPlaceholder(rawRid))
+      ? `RESP_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
+      : String(rawRid).trim();
     const source = supplierCode || "DIRECT";
 
     // Detect client IP
@@ -50,6 +52,14 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
         { status: 404 }
       );
     }
+
+    // Resolved termination URL
+    const rawTermUrl = project.surveySetup?.terminationUrl || "";
+    const terminationUrl = rawTermUrl
+      ? replaceRespondentPlaceholder(rawTermUrl, rid)
+      : `/survey/terminated?reason=${encodeURIComponent(
+          "Did not meet study criteria"
+        )}&rid=${encodeURIComponent(rid)}`;
 
     // Anti-fraud duplicate IP check:
     // If this IP has already screened out, completed, or been blocked, reject immediately!
@@ -70,8 +80,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
           reason: "duplicate_ip",
           message:
             "Survey Access Terminated: This IP address has previously attempted this survey and was screened out. Re-entry from this IP address is strictly and permanently disabled.",
-          redirectUrl:
-            project.surveySetup?.terminationUrl || "/survey/terminated",
+          redirectUrl: terminationUrl || "/survey/terminated",
         },
         { status: 403 }
       );
@@ -89,13 +98,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     // Prepare main survey target URL if qualified
     let mainSurveyUrl = project.surveySetup?.surveyUrl || "";
     if (mainSurveyUrl) {
-      // Replace standard RID tokens
-      mainSurveyUrl = mainSurveyUrl
-        .replace(/\[RID\]/gi, rid)
-        .replace(/\{\{RID\}\}/gi, rid)
-        .replace(/\[respondent_id\]/gi, rid);
-
-      // Append RID parameter if not present
+      mainSurveyUrl = replaceRespondentPlaceholder(mainSurveyUrl, rid);
       if (!mainSurveyUrl.includes(rid)) {
         const separator = mainSurveyUrl.includes("?") ? "&" : "?";
         mainSurveyUrl = `${mainSurveyUrl}${separator}rid=${encodeURIComponent(
@@ -106,11 +109,11 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       mainSurveyUrl = `/survey/sample-complete?rid=${encodeURIComponent(rid)}`;
     }
 
-    const terminationUrl =
-      project.surveySetup?.terminationUrl ||
-      `/survey/terminated?reason=${encodeURIComponent(
-        evaluation.reason || "Did not meet study criteria"
-      )}`;
+    const evaluationTermUrl = rawTermUrl
+      ? replaceRespondentPlaceholder(rawTermUrl, rid)
+      : `/survey/terminated?reason=${encodeURIComponent(
+          evaluation.reason || "Did not meet study criteria"
+        )}&rid=${encodeURIComponent(rid)}`;
 
     if (evaluation.passed) {
       // QUALIFIED:
@@ -172,7 +175,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
         reason: evaluation.reason,
         message:
           "Screener failed. You did not meet the criteria for this survey. Your IP address has been recorded and you cannot re-attempt this survey.",
-        redirectUrl: terminationUrl,
+        redirectUrl: evaluationTermUrl || terminationUrl,
         ip: clientIp,
       });
     }

@@ -101,9 +101,9 @@ function AppLayoutContent({
                     setUserDropdownOpen(false);
                   }}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition hover:bg-white/10 ${pathname.startsWith("/project") ||
-                      pathname === "/dashboard"
-                      ? "text-white font-medium bg-white/15"
-                      : "text-zinc-200"
+                    pathname === "/dashboard"
+                    ? "text-white font-medium bg-white/15"
+                    : "text-zinc-200"
                     }`}
                 >
                   <span>Surveys</span>
@@ -224,8 +224,8 @@ function AppLayoutContent({
                     setUserDropdownOpen(false);
                   }}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition hover:bg-white/10 ${reportsDropdownOpen
-                      ? "text-white font-medium bg-white/15"
-                      : "text-zinc-200"
+                    ? "text-white font-medium bg-white/15"
+                    : "text-zinc-200"
                     }`}
                 >
                   <span>Reports</span>
@@ -233,8 +233,8 @@ function AppLayoutContent({
                   <ChevronDown
                     size={12}
                     className={`transition-transform opacity-70 ${reportsDropdownOpen
-                        ? "rotate-180"
-                        : ""
+                      ? "rotate-180"
+                      : ""
                       }`}
                   />
                 </button>
@@ -301,109 +301,7 @@ function AppLayoutContent({
                 )}
               </div>
 
-              {/* ADMIN */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAdminDropdownOpen(
-                      !adminDropdownOpen
-                    );
-                    setSurveysDropdownOpen(false);
-                    setReportsDropdownOpen(false);
-                    setUserDropdownOpen(false);
-                  }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition hover:bg-white/10 ${adminDropdownOpen
-                      ? "text-white font-medium bg-white/15"
-                      : "text-zinc-200"
-                    }`}
-                >
-                  <span>Admin</span>
 
-                  <ChevronDown
-                    size={12}
-                    className={`transition-transform opacity-70 ${adminDropdownOpen
-                        ? "rotate-180"
-                        : ""
-                      }`}
-                  />
-                </button>
-
-                {adminDropdownOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() =>
-                        setAdminDropdownOpen(false)
-                      }
-                    />
-
-                    <div className="absolute left-0 mt-2 w-64 rounded-xl border border-zinc-700 bg-[#1c0225] p-2 shadow-2xl z-50">
-
-                      <div className="px-3 py-1.5 text-[10px] uppercase font-semibold text-zinc-400">
-                        System Portals
-                      </div>
-
-                      {portals.map((p) => {
-                        const Icon = p.icon;
-
-                        return (
-                          <Link
-                            key={p.name}
-                            href={p.href}
-                            onClick={() =>
-                              setAdminDropdownOpen(false)
-                            }
-                            className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs hover:bg-purple-900/40 text-zinc-200 hover:text-white transition"
-                          >
-                            <div
-                              className={`p-1.5 rounded-md border ${p.color}`}
-                            >
-                              <Icon size={13} />
-                            </div>
-
-                            <div>
-                              <div className="font-medium">
-                                {p.name}
-                              </div>
-
-                              <div className="text-[10px] text-zinc-400">
-                                {p.role}
-                              </div>
-                            </div>
-                          </Link>
-                        );
-                      })}
-
-                      <div className="my-1 border-t border-purple-900/50" />
-
-                      <Link
-                        href="/admin/quotas"
-                        onClick={() =>
-                          setAdminDropdownOpen(false)
-                        }
-                        className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs hover:bg-purple-900/40 text-zinc-200 hover:text-white transition"
-                      >
-                        <PieChart
-                          size={14}
-                          className="text-pink-400"
-                        />
-
-                        <div>
-                          <div className="font-medium">
-                            Quota Engine Global View
-                          </div>
-
-                          <div className="text-[10px] text-zinc-400">
-                            Multi-project balancing
-                          </div>
-                        </div>
-                      </Link>
-
-                    </div>
-                  </>
-                )}
-              </div>
 
             </nav>
           </div>

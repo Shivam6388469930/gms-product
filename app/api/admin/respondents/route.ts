@@ -98,6 +98,7 @@ export async function GET(request: NextRequest) {
     const [sessions, total, statsAgg, totalSessions] =
       await Promise.all([
         RespondentSession.find(query)
+          .select("-screenerAnswers")
           .populate(
             "project",
             "surveyTitle country"

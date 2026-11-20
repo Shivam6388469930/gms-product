@@ -4,25 +4,20 @@ import React, { useState } from "react";
 import {
   Compass,
   Search,
-  Filter,
   Clock,
-  Gift,
   Laptop,
   Smartphone,
   Tablet,
   Play,
-  Sparkles,
-  ShieldCheck,
   CheckCircle2,
 } from "lucide-react";
 import { useRespondent } from "@/lib/respondent-store";
 
 export default function SurveyOpportunitiesPage() {
-  const { opportunities, completeSurveySimulation } = useRespondent();
+  const { opportunities, startSurvey } = useRespondent();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [activeSurveyModal, setActiveSurveyModal] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [launchingSurveyId, setLaunchingSurveyId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const filtered = opportunities.filter((opp) => {
@@ -34,19 +29,22 @@ export default function SurveyOpportunitiesPage() {
     return matchesSearch && matchesCategory;
   });
 
-  const handleSimulate = (surveyId: string, result: "completed" | "screened_out" | "quota_full") => {
-    setSubmitting(true);
-    setTimeout(() => {
-      completeSurveySimulation(surveyId, result);
-      setSubmitting(false);
-      setActiveSurveyModal(null);
-      setToast(
-        result === "completed"
-          ? "🎉 Survey Complete! Full points credited to your wallet balance."
-          : "Screenout recorded. +10 points added for participation."
-      );
+  const handleStartSurvey = async (surveyId: string) => {
+    setLaunchingSurveyId(surveyId);
+    try {
+      const result = await startSurvey(surveyId);
+      if (!result.success) {
+        throw new Error("Unable to start this survey. Please sign in again and retry.");
+      }
+      setToast("The original survey opened in a new tab.");
       setTimeout(() => setToast(null), 4000);
-    }, 800);
+    } catch (error) {
+      console.error("Failed to start survey:", error);
+      setToast(error instanceof Error ? error.message : "Unable to start this survey.");
+      setTimeout(() => setToast(null), 4000);
+    } finally {
+      setLaunchingSurveyId(null);
+    }
   };
 
   const getDeviceIcon = (devices?: string[]) => {
@@ -171,11 +169,12 @@ export default function SurveyOpportunitiesPage() {
                 <div className="flex items-center justify-between pt-1">
                   {getDeviceIcon(opp.deviceAllowed)}
                   <button
-                    onClick={() => setActiveSurveyModal(opp.id)}
-                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-zinc-950 text-xs font-bold flex items-center gap-1.5 shadow-sm transition"
+                    onClick={() => handleStartSurvey(opp.id)}
+                    disabled={launchingSurveyId === opp.id || opp.status !== "available"}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-zinc-950 text-xs font-bold flex items-center gap-1.5 shadow-sm transition"
                   >
                     <Play size={13} className="fill-zinc-950" />
-                    Start Survey
+                    {launchingSurveyId === opp.id ? "Opening..." : "Start Original Survey"}
                   </button>
                 </div>
               </div>
@@ -184,46 +183,6 @@ export default function SurveyOpportunitiesPage() {
         </div>
       )}
 
-      {/* Simulator Modal */}
-      {activeSurveyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl border border-zinc-800 bg-zinc-950 p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Play size={14} className="text-emerald-400 fill-emerald-400" />
-                Participate in Survey Session
-              </h3>
-              <button
-                onClick={() => setActiveSurveyModal(null)}
-                className="p-1 rounded text-zinc-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="text-xs text-zinc-300">
-              Select an outcome below to test real-time wallet crediting and history logging:
-            </p>
-
-            <div className="space-y-2 pt-2">
-              <button
-                onClick={() => handleSimulate(activeSurveyModal, "completed")}
-                disabled={submitting}
-                className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-zinc-950 text-xs font-bold transition"
-              >
-                {submitting ? "Saving..." : "Simulate Complete Survey (Credit Reward)"}
-              </button>
-              <button
-                onClick={() => handleSimulate(activeSurveyModal, "screened_out")}
-                disabled={submitting}
-                className="w-full py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-amber-300 text-xs font-semibold transition"
-              >
-                Simulate Screenout (+10 pts compensation)
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

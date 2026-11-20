@@ -105,7 +105,7 @@ function SupplierLayoutContent({ children }: { children: React.ReactNode }) {
       icon: Layers,
     },
     {
-      name: "API Integration",
+      name: "Add Redirects",
       href: "/supplier/api-integration",
       icon: Code2,
     },
@@ -145,9 +145,8 @@ function SupplierLayoutContent({ children }: { children: React.ReactNode }) {
 
       {/* Sidebar */}
       <aside
-        className={`${
-          mobileMenuOpen ? "block" : "hidden"
-        } md:flex flex-col w-full md:w-64 lg:w-72 border-r border-zinc-800/80 bg-zinc-950 shrink-0 md:sticky md:top-0 md:h-screen z-40`}
+        className={`${mobileMenuOpen ? "block" : "hidden"
+          } md:flex flex-col w-full md:w-64 lg:w-72 border-r border-zinc-800/80 bg-zinc-950 shrink-0 md:sticky md:top-0 md:h-screen z-40`}
       >
         {/* Brand / Supplier Card */}
         <div className="p-5 border-b border-zinc-800/80">
@@ -173,14 +172,12 @@ function SupplierLayoutContent({ children }: { children: React.ReactNode }) {
             <div className="flex items-center justify-between text-xs mb-1">
               <span className="text-zinc-400 font-medium">Supply Partner:</span>
               <span
-                className={`inline-flex items-center gap-1 text-[11px] font-medium ${
-                  isLiveBackend ? "text-emerald-400" : "text-amber-400"
-                }`}
+                className={`inline-flex items-center gap-1 text-[11px] font-medium ${isLiveBackend ? "text-emerald-400" : "text-amber-400"
+                  }`}
               >
                 <span
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    isLiveBackend ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
-                  }`}
+                  className={`h-1.5 w-1.5 rounded-full ${isLiveBackend ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
+                    }`}
                 />
                 {isLiveBackend ? "Online" : "Offline"}
               </span>
@@ -205,26 +202,23 @@ function SupplierLayoutContent({ children }: { children: React.ReactNode }) {
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`group flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
-                  isActive
+                className={`group flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${isActive
                     ? "bg-indigo-600 text-white font-semibold shadow-lg shadow-indigo-600/20"
                     : "text-zinc-300 hover:text-white hover:bg-zinc-900/80"
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   <Icon
                     size={17}
-                    className={`${
-                      isActive ? "text-white" : "text-zinc-400 group-hover:text-indigo-400"
-                    } transition-colors`}
+                    className={`${isActive ? "text-white" : "text-zinc-400 group-hover:text-indigo-400"
+                      } transition-colors`}
                   />
                   <span>{item.name}</span>
                 </div>
                 {item.badge && (
                   <span
-                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-full transition-colors ${
-                      isActive ? "bg-white/20 text-white" : item.badgeColor
-                    }`}
+                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-full transition-colors ${isActive ? "bg-white/20 text-white" : item.badgeColor
+                      }`}
                   >
                     {item.badge}
                   </span>
@@ -303,9 +297,8 @@ function SupplierLayoutContent({ children }: { children: React.ReactNode }) {
               title="Click to sync with backend database"
             >
               <span
-                className={`h-2 w-2 rounded-full ${
-                  isLiveBackend ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
-                }`}
+                className={`h-2 w-2 rounded-full ${isLiveBackend ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
+                  }`}
               />
               <span className="text-zinc-300 font-medium">
                 {isSyncing ? "Syncing..." : isLiveBackend ? "Online" : "Offline"}

@@ -443,7 +443,7 @@ function ReviewPageContent() {
         )}
 
         {/* LIVE SURVEY LINK & ANTI-FRAUD BANNER (Available once live or in test mode) */}
-        <div className="mb-6 overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-950 to-slate-900 p-6 text-white shadow-xl">
+        {/* <div className="mb-6 overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-950 to-slate-900 p-6 text-white shadow-xl">
           <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
             <div className="space-y-1">
               <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-semibold text-emerald-300">
@@ -505,7 +505,7 @@ function ReviewPageContent() {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* SCREENER & IP ANTI-FRAUD SECTION */}
         <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

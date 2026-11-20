@@ -101,7 +101,7 @@ export default function InvoicesPage() {
     apiJSON<{ invoices: Invoice[] }>("/api/invoices").then(({ ok, status, data }) => {
       if (!mounted) return;
       if (status === 401) {
-        router.replace("/login");
+        router.replace("/auth/login");
         return;
       }
       if (!ok) {

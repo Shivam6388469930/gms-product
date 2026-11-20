@@ -2418,6 +2418,90 @@ function RangeField({
    MULTI SELECT (checkbox dropdown)
 ========================================================= */
 
+// function MultiSelect({
+//   label,
+//   options,
+//   selected,
+//   onChange,
+//   disabled,
+// }: {
+//   label: string;
+//   options: string[];
+//   selected: string[];
+//   onChange: (next: string[]) => void;
+//   disabled?: boolean;
+// }) {
+//   const [open, setOpen] = useState(false);
+//   const allSelected = selected.length === options.length;
+
+//   function toggle(option: string) {
+//     onChange(
+//       selected.includes(option)
+//         ? selected.filter((s) => s !== option)
+//         : [...selected, option]
+//     );
+//   }
+
+//   return (
+//     <div className="relative">
+//       <span className={`${labelClass} mb-1.5 block`}>{label}</span>
+
+//       <button
+//         type="button"
+//         disabled={disabled}
+//         onClick={() => setOpen((o) => !o)}
+//         className={`${inputClass} flex items-center justify-between text-left`}
+//       >
+//         <span className="truncate text-black">
+//           {allSelected
+//             ? "All"
+//             : selected.length === 0
+//             ? "None selected"
+//             : selected.join(", ")}
+//         </span>
+//         <span className="ml-2 text-xs">▾</span>
+//       </button>
+
+//       {open && (
+//         <>
+//           {/* click-away layer */}
+//           <div
+//             className="fixed inset-0 z-10"
+//             onClick={() => setOpen(false)}
+//           />
+
+//           <div className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-zinc-200 bg-white p-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-950">
+//             <label className="flex cursor-pointer text-black items-center gap-2 border-b border-zinc-200 px-2 py-2 text-sm font-medium dark:border-zinc-800">
+//               <input
+//                 type="checkbox"
+//                 checked={allSelected}
+//                 onChange={() =>
+//                   onChange(allSelected ? [] : [...options])
+//                 }
+//               />
+//               {allSelected ? "Deselect All" : "Select All"}
+//             </label>
+
+//             {options.map((option) => (
+//               <label
+//                 key={option}
+//                 className="flex cursor-pointer text-black items-center gap-2 rounded px-2 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-900"
+//               >
+//                 <input
+//                   type="checkbox"
+//                   checked={selected.includes(option)}
+//                   onChange={() => toggle(option)}
+//                 />
+//                 {option}
+//               </label>
+//             ))}
+//           </div>
+//         </>
+//       )}
+//     </div>
+//   );
+// }
+
 function MultiSelect({
   label,
   options,
@@ -2432,6 +2516,8 @@ function MultiSelect({
   disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [openUp, setOpenUp] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
   const allSelected = selected.length === options.length;
 
   function toggle(option: string) {
@@ -2442,17 +2528,27 @@ function MultiSelect({
     );
   }
 
+  function handleOpen() {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      setOpenUp(spaceBelow < 260 && rect.top > spaceBelow); // 240px list + margin
+    }
+    setOpen((o) => !o);
+  }
+
   return (
     <div className="relative">
       <span className={`${labelClass} mb-1.5 block`}>{label}</span>
 
       <button
+        ref={btnRef}
         type="button"
         disabled={disabled}
-        onClick={() => setOpen((o) => !o)}
+        onClick={handleOpen}
         className={`${inputClass} flex items-center justify-between text-left`}
       >
-        <span className="truncate">
+        <span className="truncate text-black">
           {allSelected
             ? "All"
             : selected.length === 0
@@ -2464,20 +2560,18 @@ function MultiSelect({
 
       {open && (
         <>
-          {/* click-away layer */}
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setOpen(false)}
-          />
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
 
-          <div className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-zinc-200 bg-white p-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-950">
-            <label className="flex cursor-pointer items-center gap-2 border-b border-zinc-200 px-2 py-2 text-sm font-medium dark:border-zinc-800">
+          <div
+            className={`absolute z-20 max-h-60 w-full overflow-y-auto overscroll-contain rounded-lg border border-zinc-200 bg-white p-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-950 ${
+              openUp ? "bottom-full mb-1" : "top-full mt-1"
+            }`}
+          >
+            <label className="flex cursor-pointer items-center gap-2 border-b border-zinc-200 px-2 py-2 text-sm font-medium text-black dark:border-zinc-800">
               <input
                 type="checkbox"
                 checked={allSelected}
-                onChange={() =>
-                  onChange(allSelected ? [] : [...options])
-                }
+                onChange={() => onChange(allSelected ? [] : [...options])}
               />
               {allSelected ? "Deselect All" : "Select All"}
             </label>
@@ -2485,7 +2579,7 @@ function MultiSelect({
             {options.map((option) => (
               <label
                 key={option}
-                className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                className="flex cursor-pointer items-center gap-2 rounded px-2 py-2 text-sm text-black hover:bg-zinc-100 dark:hover:bg-zinc-900"
               >
                 <input
                   type="checkbox"
@@ -3211,7 +3305,7 @@ export default function NewProjectPage() {
       }
 
       router.push(
-        `/project/${data.project._id}`
+        `/project`
       );
     } catch (error) {
       console.error(
@@ -4336,7 +4430,7 @@ export default function NewProjectPage() {
               {currentBuilderStep === 2 && renderSampleSection()}
 
               {currentBuilderStep === 3 && (
-                <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+                <section className=" rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
                   <div className="border-b border-zinc-200 px-6 pt-6 dark:border-zinc-800">
                     <h2 className="text-lg font-semibold text-black dark:text-white">Targeting</h2>
                     <p className="mt-1 text-sm text-zinc-500">Define the audience that should qualify for this survey.</p>

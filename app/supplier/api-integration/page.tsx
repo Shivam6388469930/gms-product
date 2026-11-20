@@ -1,17 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Code2,
   Key,
   Copy,
   Check,
   Play,
-  ShieldCheck,
   RefreshCw,
   Trash2,
   Plus,
-  ExternalLink,
   Terminal,
   Send,
   CheckCircle2,
@@ -24,7 +22,6 @@ export default function ApiIntegrationPage() {
     generateApiKey,
     revokeApiKey,
     runPostbackTest,
-    postbackTestResult,
   } = useSupplier();
 
   const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
@@ -40,15 +37,48 @@ export default function ApiIntegrationPage() {
 
   // Postback URLs configuration
   const [completeUrl, setCompleteUrl] = useState(
-    "https://api.apexsample.com/v1/postbacks/complete?rid=[RID]&cpi=[CPI]"
+    ""
   );
   const [terminateUrl, setTerminateUrl] = useState(
-    "https://api.apexsample.com/v1/postbacks/terminate?rid=[RID]&reason=[REASON]"
+    ""
   );
   const [quotaUrl, setQuotaUrl] = useState(
-    "https://api.apexsample.com/v1/postbacks/quota_full?rid=[RID]"
+    ""
   );
+  const [securityTerminateUrl, setSecurityTerminateUrl] = useState("");
   const [savedUrlsMsg, setSavedUrlsMsg] = useState(false);
+  const [savingUrls, setSavingUrls] = useState(false);
+  const [urlError, setUrlError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    fetch("/api/supplier/postbacks", { credentials: "include" })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || "Failed to load postback URLs");
+        }
+        if (active) {
+          setCompleteUrl(data.postbackUrls.complete || "");
+          setTerminateUrl(data.postbackUrls.disqualified || "");
+          setQuotaUrl(data.postbackUrls.quotaFull || "");
+          setSecurityTerminateUrl(data.postbackUrls.securityTerminate || "");
+        }
+      })
+      .catch((error: unknown) => {
+        console.error("Failed to load supplier postback URLs:", error);
+        if (active) {
+          setUrlError(
+            error instanceof Error ? error.message : "Failed to load postback URLs"
+          );
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleGenerateKey = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,10 +101,39 @@ export default function ApiIntegrationPage() {
     setTestOutput(res.message);
   };
 
-  const handleSaveUrls = (e: React.FormEvent) => {
+  const handleSaveUrls = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSavedUrlsMsg(true);
-    setTimeout(() => setSavedUrlsMsg(false), 3000);
+    setSavingUrls(true);
+    setUrlError(null);
+    setSavedUrlsMsg(false);
+
+    try {
+      const response = await fetch("/api/supplier/postbacks", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          complete: completeUrl,
+          disqualified: terminateUrl,
+          quotaFull: quotaUrl,
+          securityTerminate: securityTerminateUrl,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to save postback URLs");
+      }
+
+      setSavedUrlsMsg(true);
+      setTimeout(() => setSavedUrlsMsg(false), 3000);
+    } catch (error) {
+      console.error("Failed to save supplier postback URLs:", error);
+      setUrlError(
+        error instanceof Error ? error.message : "Failed to save postback URLs"
+      );
+    } finally {
+      setSavingUrls(false);
+    }
   };
 
   return (
@@ -213,6 +272,11 @@ export default function ApiIntegrationPage() {
             Postback configurations updated and synchronized with GMS Router.
           </div>
         )}
+        {urlError && (
+          <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs">
+            {urlError}
+          </div>
+        )}
 
         <form onSubmit={handleSaveUrls} className="space-y-4 text-xs">
           <div>
@@ -231,7 +295,7 @@ export default function ApiIntegrationPage() {
 
           <div>
             <label className="block text-zinc-300 font-semibold mb-1">
-              Screenout / Terminate Postback URL
+              Disqualified / Screenout Postback URL
             </label>
             <input
               value={terminateUrl}
@@ -251,11 +315,23 @@ export default function ApiIntegrationPage() {
             />
           </div>
 
+          <div>
+            <label className="block text-zinc-300 font-semibold mb-1">
+              Security Terminate Postback URL
+            </label>
+            <input
+              value={securityTerminateUrl}
+              onChange={(e) => setSecurityTerminateUrl(e.target.value)}
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 font-mono text-xs text-zinc-200 focus:outline-none focus:border-indigo-500"
+            />
+          </div>
+
           <button
             type="submit"
-            className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition"
+            disabled={savingUrls}
+            className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold transition"
           >
-            Save Postback Configuration
+            {savingUrls ? "Saving..." : "Save Postback Configuration"}
           </button>
         </form>
       </div>

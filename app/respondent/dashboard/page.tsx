@@ -16,8 +16,6 @@ import {
   Laptop,
   Smartphone,
   Tablet,
-  ChevronRight,
-  Check,
 } from "lucide-react";
 import { useRespondent } from "@/lib/respondent-store";
 
@@ -30,28 +28,32 @@ export default function RespondentDashboardPage() {
     qualityScore,
     opportunities,
     history,
-    completeSurveySimulation,
+    startSurvey,
   } = useRespondent();
 
-  const [activeSurveyModal, setActiveSurveyModal] = useState<string | null>(null);
-  const [answering, setAnswering] = useState(false);
+  const [launchingSurveyId, setLaunchingSurveyId] = useState<string | null>(null);
   const [successBanner, setSuccessBanner] = useState<string | null>(null);
 
   const completedSurveys = history.filter((h) => h.status === "approved");
 
-  const handleSimulateSurvey = (surveyId: string, result: "completed" | "screened_out" | "quota_full") => {
-    setAnswering(true);
-    setTimeout(() => {
-      completeSurveySimulation(surveyId, result);
-      setAnswering(false);
-      setActiveSurveyModal(null);
+  const handleStartSurvey = async (surveyId: string) => {
+    setLaunchingSurveyId(surveyId);
+    try {
+      const result = await startSurvey(surveyId);
+      if (!result.success) {
+        throw new Error("Unable to start this survey. Please sign in again and retry.");
+      }
+      setSuccessBanner("The original survey opened in a new tab.");
+      setTimeout(() => setSuccessBanner(null), 4000);
+    } catch (error) {
+      console.error("Failed to start survey:", error);
       setSuccessBanner(
-        result === "completed"
-          ? "🎉 Survey Completed! Reward has been credited to your balance."
-          : "Demographic quota reached. Added +10 participation points to your balance."
+        error instanceof Error ? error.message : "Unable to start this survey."
       );
       setTimeout(() => setSuccessBanner(null), 4000);
-    }, 900);
+    } finally {
+      setLaunchingSurveyId(null);
+    }
   };
 
   const getDeviceIcon = (devices?: string[]) => {
@@ -202,7 +204,7 @@ export default function RespondentDashboardPage() {
 
             {opportunities.length === 0 ? (
               <div className="text-center py-10 rounded-xl border border-dashed border-zinc-800 text-xs text-zinc-400">
-                You've completed all active matches! Check back shortly for new invitations.
+                You&apos;ve completed all active matches! Check back shortly for new invitations.
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-3.5">
@@ -250,11 +252,15 @@ export default function RespondentDashboardPage() {
                       </div>
 
                       <button
-                        onClick={() => setActiveSurveyModal(opp.id)}
-                        className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-zinc-950 text-xs font-bold flex items-center gap-1.5 shadow-sm transition"
+                        onClick={() => handleStartSurvey(opp.id)}
+                        disabled={
+                          launchingSurveyId === opp.id ||
+                          opp.status !== "available"
+                        }
+                        className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-zinc-950 text-xs font-bold flex items-center gap-1.5 shadow-sm transition"
                       >
                         <Play size={12} className="fill-zinc-950" />
-                        Take Survey
+                        {launchingSurveyId === opp.id ? "Opening..." : "Take Original Survey"}
                       </button>
                     </div>
                   </div>
@@ -337,67 +343,6 @@ export default function RespondentDashboardPage() {
         </div>
       </div>
 
-      {/* Survey Simulator Modal */}
-      {activeSurveyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl border border-zinc-800 bg-zinc-950 p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <div>
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Play size={14} className="text-emerald-400 fill-emerald-400" />
-                  Live Survey Session Simulator
-                </h3>
-                <p className="text-xs text-zinc-400 mt-0.5">
-                  GMS Research Panel Environment
-                </p>
-              </div>
-              <button
-                onClick={() => setActiveSurveyModal(null)}
-                className="p-1 rounded text-zinc-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="p-4 rounded-xl bg-zinc-900 border border-zinc-800 space-y-3 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400 font-medium">Session Security:</span>
-                <span className="text-emerald-400 flex items-center gap-1 font-mono text-[11px]">
-                  <ShieldCheck size={13} />
-                  Fingerprint Verified
-                </span>
-              </div>
-              <p className="text-zinc-300 leading-relaxed">
-                This is a real-time research session test. You can simulate completing the study or test screening outcomes to see reward allocation and log tracking.
-              </p>
-            </div>
-
-            <div className="space-y-2 pt-2">
-              <button
-                onClick={() => handleSimulateSurvey(activeSurveyModal, "completed")}
-                disabled={answering}
-                className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-zinc-950 text-xs font-bold transition flex items-center justify-center gap-2"
-              >
-                {answering ? "Submitting Answers..." : "Simulate 100% Survey Complete (Earn Full Reward)"}
-              </button>
-              <button
-                onClick={() => handleSimulateSurvey(activeSurveyModal, "screened_out")}
-                disabled={answering}
-                className="w-full py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 disabled:opacity-50 border border-zinc-800 text-amber-300 text-xs font-semibold transition"
-              >
-                Simulate Screener Mismatch (Screened Out +10 pts)
-              </button>
-              <button
-                onClick={() => handleSimulateSurvey(activeSurveyModal, "quota_full")}
-                disabled={answering}
-                className="w-full py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 disabled:opacity-50 border border-zinc-800 text-zinc-400 text-xs font-medium transition"
-              >
-                Simulate Target Quota Full (+10 pts)
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

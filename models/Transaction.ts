@@ -72,6 +72,10 @@ const TransactionSchema = new Schema<ITransaction>(
   }
 );
 
+TransactionSchema.index({ owner: 1, createdAt: -1 });
+TransactionSchema.index({ project: 1, type: 1, status: 1 });
+TransactionSchema.index({ status: 1, createdAt: -1 });
+
 const Transaction: Model<ITransaction> =
   mongoose.models.Transaction ||
   mongoose.model<ITransaction>("Transaction", TransactionSchema);

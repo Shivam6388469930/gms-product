@@ -296,6 +296,38 @@ const ProjectSchema = new Schema(
        BASIC PROJECT INFO
     ======================================================= */
 
+    projectId: {
+      type: String,
+      trim: true,
+      index: true,
+    },
+
+    clientName: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    startDate: {
+      type: Date,
+    },
+
+    endDate: {
+      type: Date,
+    },
+
+    surveyUrl: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    respondentParam: {
+      type: String,
+      trim: true,
+      default: "rid",
+    },
+
     surveyTitle: {
       type: String,
       required: true,
@@ -410,6 +442,7 @@ const ProjectSchema = new Schema(
         strictIpTermination: true,
         questions: [],
       }),
+    },
 
     /* =======================================================
        SOFT LAUNCH
@@ -467,7 +500,6 @@ const ProjectSchema = new Schema(
       }],
       default: [],
     },
-    },
 
     /* =======================================================
        STATUS
@@ -480,6 +512,7 @@ const ProjectSchema = new Schema(
         "live",
         "paused",
         "stopped",
+        "completed",
       ],
       default: "draft",
       index: true,
@@ -517,9 +550,28 @@ const ProjectSchema = new Schema(
   }
 );
 
+// Compound indexes for fast dashboard, query, and sorting performance
+ProjectSchema.index({ owner: 1, status: 1, createdAt: -1 });
+ProjectSchema.index({ owner: 1, updatedAt: -1 });
+ProjectSchema.index({ status: 1, createdAt: -1 });
+ProjectSchema.index({ projectId: 1, status: 1 });
+
 ProjectSchema.pre("validate", function (this: any) {
   if (!this.buyerId && this.owner) this.buyerId = this.owner;
   if (!this.owner && this.buyerId) this.owner = this.buyerId;
+
+  // Auto-assign clean human-readable projectId if not set
+  if (!this.projectId) {
+    this.projectId = "GMS" + Math.floor(10000 + Math.random() * 90000);
+  }
+
+  // Keep top-level surveyUrl and surveySetup.surveyUrl synchronized
+  if (this.surveyUrl && (!this.surveySetup || !this.surveySetup.surveyUrl)) {
+    this.surveySetup = this.surveySetup || {};
+    this.surveySetup.surveyUrl = this.surveyUrl;
+  } else if (this.surveySetup?.surveyUrl && !this.surveyUrl) {
+    this.surveyUrl = this.surveySetup.surveyUrl;
+  }
 });
 ProjectSchema.virtual("buyer").get(function (this: any) {
   return this.buyerId || this.owner;
@@ -534,33 +586,5 @@ ProjectSchema.virtual("name").get(function (this: { surveyTitle?: string }) {
 const ProjectModel =
   mongoose.models.Project ??
   mongoose.model("Project", ProjectSchema);
-
-  console.log(
-  "========== PROJECT MODEL =========="
-);
-
-console.log(
-  "Project model:",
-  ProjectModel.modelName
-);
-
-console.log(
-  "Project schema paths:",
-  Object.keys(ProjectModel.schema.paths)
-);
-
-console.log(
-  "Project name path:",
-  ProjectModel.schema.path("name")
-);
-
-console.log(
-  "Project surveyTitle path:",
-  ProjectModel.schema.path("surveyTitle")
-);
-
-console.log(
-  "=================================="
-);
 
 export default ProjectModel;

@@ -5,6 +5,7 @@ import Project from "@/models/Project";
 import RespondentSession from "@/models/RespondentSession";
 import { getClientIp, generateDefaultScreenerQuestions } from "@/lib/screener-helper";
 import { dispatchWebhooks } from "@/lib/webhooks";
+import { replaceRespondentPlaceholder, isRespondentPlaceholder } from "@/lib/survey-urls";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -40,9 +41,16 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
     const searchParams = req.nextUrl.searchParams;
     const mode = searchParams.get("mode") || "live";
     const testIp = searchParams.get("test_ip") || req.headers.get("x-simulated-ip");
-    const rid = searchParams.get("rid") || `RESP_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const rawRid = searchParams.get("rid") || "";
+    const rid = (!rawRid || isRespondentPlaceholder(rawRid))
+      ? `RESP_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
+      : rawRid.trim();
     const supplierCode = searchParams.get("source") || "DIRECT";
     const fingerprint = searchParams.get("fp") || req.headers.get("x-device-fingerprint") || "";
+
+    // Resolved termination URL with respondent ID substituted
+    const rawTermUrl = project.surveySetup?.terminationUrl || "";
+    const terminationUrl = rawTermUrl ? replaceRespondentPlaceholder(rawTermUrl, rid) : "";
 
     // Detect client IP
     const clientIp = testIp ? testIp.trim() : getClientIp(req);
@@ -125,7 +133,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
           allowed: false,
           reason: "excluded",
           message: "You are not eligible for this survey.",
-          terminationUrl: project.surveySetup?.terminationUrl || "",
+          terminationUrl,
         },
         { status: 403 }
       );
@@ -163,7 +171,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
           message:
             "Access Denied: This IP address has already attempted or been screened out of this survey. In compliance with ESOMAR/GRBN sample-quality guidelines, each IP address is strictly limited to one attempt. Re-entry is permanently barred.",
           previousStatus: existingSession.status,
-          terminationUrl: project.surveySetup?.terminationUrl || "",
+          terminationUrl,
         },
         { status: 403 }
       );
@@ -199,7 +207,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
             allowed: false,
             reason: "fingerprint_duplicate",
             message: "You have recently participated in a similar study and are not eligible at this time.",
-            terminationUrl: project.surveySetup?.terminationUrl || "",
+            terminationUrl,
           },
           { status: 403 }
         );

@@ -68,6 +68,7 @@ interface RespondentContextType {
 
   supplierName: string;
   supplierEmail: string;
+  supplierCode: string;
 
   pointsBalance: number;
   usdBalance: number;
@@ -98,14 +99,6 @@ interface RespondentContextType {
     success: boolean;
     url: string;
   }>;
-
-  completeSurveySimulation: (
-    surveyId: string,
-    result:
-      | "completed"
-      | "screened_out"
-      | "quota_full"
-  ) => void;
 
   redeemReward: (
     rewardName: string,
@@ -140,16 +133,6 @@ const RespondentContext =
     null
   );
 
-function getSurveyUrl(opp: any): string {
-  return (
-    opp?.surveyUrl ||
-    opp?.publicUrl ||
-    opp?.url ||
-    opp?.link ||
-    ""
-  );
-}
-
 export function RespondentProvider({
   children,
 }: {
@@ -182,6 +165,11 @@ export function RespondentProvider({
   const [
     supplierEmail,
     setSupplierEmail,
+  ] = useState("");
+
+  const [
+    supplierCode,
+    setSupplierCode,
   ] = useState("");
 
   const [
@@ -419,6 +407,12 @@ export function RespondentProvider({
             ""
         );
 
+        setSupplierCode(
+          respondent.supplier?.supplierCode ||
+            respondent.supplierCode ||
+            ""
+        );
+
         // ======================================================
         // BALANCE
         // ======================================================
@@ -522,6 +516,7 @@ export function RespondentProvider({
 
         setSupplierName("");
         setSupplierEmail("");
+        setSupplierCode("");
 
         setPointsBalance(0);
         setLifetimeEarnings(0);
@@ -578,22 +573,25 @@ export function RespondentProvider({
   ) => {
     const opportunity =
       opportunities.find(
-        (item: any) =>
-          item.id === surveyId
+        (item) => item.id === surveyId
       );
 
-    const url =
-      getSurveyUrl(
-        opportunity
-      );
-
-    if (!url) {
+    if (!opportunity || !respondentId) {
       return {
         success: false,
         url: "",
       };
     }
 
+    const params = new URLSearchParams({
+      pid: opportunity.id,
+      rid: respondentId,
+    });
+    if (supplierCode) {
+      params.set("sup", supplierCode);
+    }
+
+    const url = `/api/survey/start?${params.toString()}`;
     window.open(
       url,
       "_blank",
@@ -604,36 +602,6 @@ export function RespondentProvider({
       success: true,
       url,
     };
-  };
-
-  // ============================================================
-  // SIMULATION
-  // ============================================================
-
-  const completeSurveySimulation = (
-    surveyId: string,
-    result:
-      | "completed"
-      | "screened_out"
-      | "quota_full"
-  ) => {
-    setOpportunities(
-      (previous) =>
-        previous.map(
-          (opportunity: any) =>
-            opportunity.id ===
-            surveyId
-              ? {
-                  ...opportunity,
-                  status:
-                    result ===
-                    "completed"
-                      ? "completed"
-                      : result,
-                }
-              : opportunity
-        )
-    );
   };
 
   // ============================================================
@@ -815,6 +783,7 @@ export function RespondentProvider({
 
         supplierName,
         supplierEmail,
+        supplierCode,
 
         pointsBalance,
         usdBalance,
@@ -839,7 +808,6 @@ export function RespondentProvider({
         logout,
 
         startSurvey,
-        completeSurveySimulation,
         redeemReward,
 
         updateDemographics,

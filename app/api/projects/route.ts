@@ -24,6 +24,7 @@ export async function GET() {
     const projects = await Project.find({
       owner: userId,
     })
+      .select("-screener.questions -quotaNesting")
       .sort({ createdAt: -1 })
       .lean();
 
@@ -107,225 +108,72 @@ export async function POST(req: Request) {
       );
     }
 
-    /* -------------------------------------------------------
-       CREATE PROJECT
-    ------------------------------------------------------- */
-
-    // const project = await Project.create({
-    //   owner: userId,
-
-    //   /* =========================
-    //      BASIC INFO
-    //   ========================= */
-
-    //   surveyTitle: parsed.value.surveyTitle,
-
-    //   country: parsed.value.country,
-
-    //   audienceType: parsed.value.audienceType,
-
-    //   audienceDescription:
-    //     parsed.value.audienceDescription ?? "",
-
-    //   /* =========================
-    //      FEASIBILITY INPUT
-    //   ========================= */
-
-    //   sampleSize: parsed.value.sampleSize,
-
-    //   loi: parsed.value.loi,
-
-    //   ir: parsed.value.ir,
-
-    //   estimate,
-
-    //   /* =========================
-    //      TARGETING
-    //   ========================= */
-
-    //   targeting: {
-    //     country:
-    //       parsed.value.targeting?.country ??
-    //       parsed.value.country,
-
-    //     language:
-    //       parsed.value.targeting?.language ??
-    //       "English",
-
-    //     category:
-    //       parsed.value.targeting?.category ??
-    //       "",
-
-    //     gender:
-    //       parsed.value.targeting?.gender ??
-    //       "All",
-
-    //     age:
-    //       parsed.value.targeting?.age ??
-    //       "All",
-
-    //     income:
-    //       parsed.value.targeting?.income ??
-    //       "All",
-
-    //     hispanicOrigin:
-    //       parsed.value.targeting?.hispanicOrigin ??
-    //       "All",
-
-    //     relationship:
-    //       parsed.value.targeting?.relationship ??
-    //       "All",
-
-    //     children:
-    //       parsed.value.targeting?.children ??
-    //       "All",
-
-    //     employment:
-    //       parsed.value.targeting?.employment ??
-    //       "All",
-
-    //     education:
-    //       parsed.value.targeting?.education ??
-    //       "All",
-
-    //     device:
-    //       parsed.value.targeting?.device ??
-    //       "All",
-
-    //     advancedTargeting:
-    //       parsed.value.targeting?.advancedTargeting ??
-    //       [],
-
-    //     location: {
-    //       region:
-    //         parsed.value.targeting?.location?.region ??
-    //         [],
-
-    //       division:
-    //         parsed.value.targeting?.location?.division ??
-    //         [],
-
-    //       state:
-    //         parsed.value.targeting?.location?.state ??
-    //         [],
-
-    //       csa:
-    //         parsed.value.targeting?.location?.csa ??
-    //         [],
-
-    //       cbsa:
-    //         parsed.value.targeting?.location?.cbsa ??
-    //         [],
-
-    //       county:
-    //         parsed.value.targeting?.location?.county ??
-    //         [],
-
-    //       dma:
-    //         parsed.value.targeting?.location?.dma ??
-    //         [],
-
-    //       zipcode:
-    //         parsed.value.targeting?.location?.zipcode ??
-    //         [],
-    //     },
-
-    //     quotaNesting:
-    //       parsed.value.targeting?.quotaNesting ??
-    //       [],
-    //   },
-
-    //   /* =========================
-    //      SURVEY SETUP
-    //   ========================= */
-
-    //   surveySetup: {
-    //     surveyUrl: "",
-    //     surveyType: "external",
-    //     estimatedLoi: parsed.value.loi,
-    //     redirectUrl: "",
-    //     terminationUrl: "",
-    //     qualificationUrl: "",
-    //     status: "not_configured",
-    //   },
-
-    //   /* =========================
-    //      STATUS
-    //   ========================= */
-
-    //   status: "draft",
-
-    //   /* =========================
-    //      PROGRESS
-    //   ========================= */
-
-    //   progress: {
-    //     starts: 0,
-    //     completes: 0,
-    //     screenouts: 0,
-    //     quotaFull: 0,
-    //     qualityRejects: 0,
-    //     spend: 0,
-    //   },
-    // });
-
     // Extract quotas and overquotaConfig from the raw body (not validated by parseProjectInput)
     const quotas = Array.isArray(body.quotas) ? body.quotas : [];
     const overquotaConfig = body.overquotaConfig && typeof body.overquotaConfig === "object"
       ? {
-          bufferPercent: Number(body.overquotaConfig.bufferPercent) || 0,
-          action: body.overquotaConfig.action || "terminate",
-          redirectUrl: String(body.overquotaConfig.redirectUrl || ""),
-        }
+        bufferPercent: Number(body.overquotaConfig.bufferPercent) || 0,
+        action: body.overquotaConfig.action || "terminate",
+        redirectUrl: String(body.overquotaConfig.redirectUrl || ""),
+      }
       : { bufferPercent: 5, action: "terminate", redirectUrl: "" };
 
+    const rawSurveyUrl = String(body.surveyUrl || body.surveySetup?.surveyUrl || "").trim();
+    const customPid = String(body.projectId || "").trim();
+
     const project = await Project.create({
-  owner: userId,
+      owner: userId,
+      projectId: customPid || undefined,
+      clientName: String(body.clientName || body.client || "").trim(),
+      startDate: body.startDate ? new Date(body.startDate) : undefined,
+      endDate: body.endDate ? new Date(body.endDate) : undefined,
+      surveyUrl: rawSurveyUrl,
+      respondentParam: body.respondentParam || "rid",
 
-  surveyTitle: parsed.value.surveyTitle,
+      surveyTitle: parsed.value.surveyTitle,
 
-  country: parsed.value.country,
+      country: parsed.value.country,
 
-  audienceType: parsed.value.audienceType,
+      audienceType: parsed.value.audienceType,
 
-  audienceDescription:
-    parsed.value.audienceDescription ?? "",
+      audienceDescription:
+        parsed.value.audienceDescription ?? "",
 
-  sampleSize: parsed.value.sampleSize,
+      sampleSize: parsed.value.sampleSize,
 
-  loi: parsed.value.loi,
+      loi: parsed.value.loi,
 
-  ir: parsed.value.ir,
+      ir: parsed.value.ir,
 
-  estimate,
+      estimate,
 
-  targeting: parsed.value.targeting,
+      targeting: parsed.value.targeting,
 
-  quotas,
+      quotas,
 
-  overquotaConfig,
+      overquotaConfig,
 
-  surveySetup: {
-    surveyUrl: "",
-    surveyType: "external",
-    estimatedLoi: parsed.value.loi,
-    redirectUrl: "",
-    terminationUrl: "",
-    qualificationUrl: "",
-    status: "not_configured",
-  },
+      surveySetup: {
+        surveyUrl: rawSurveyUrl,
+        surveyType: "external",
+        estimatedLoi: parsed.value.loi,
+        redirectUrl: "",
+        terminationUrl: "",
+        qualificationUrl: "",
+        status: rawSurveyUrl ? "ready" : "not_configured",
+      },
 
-  status: "draft",
+      status: body.status || "draft",
 
-  progress: {
-    starts: 0,
-    completes: 0,
-    screenouts: 0,
-    quotaFull: 0,
-    qualityRejects: 0,
-    spend: 0,
-  },
-});
+      progress: {
+        starts: 0,
+        completes: 0,
+        screenouts: 0,
+        quotaFull: 0,
+        qualityRejects: 0,
+        spend: 0,
+      },
+    });
     /* -------------------------------------------------------
        RESPONSE
     ------------------------------------------------------- */
@@ -417,7 +265,7 @@ export async function POST(req: Request) {
         message:
           process.env.NODE_ENV === "development"
             ? error?.message ||
-              "Something went wrong"
+            "Something went wrong"
             : "Something went wrong",
       },
       {

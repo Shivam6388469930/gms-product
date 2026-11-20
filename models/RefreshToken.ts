@@ -41,6 +41,8 @@ const RefreshTokenSchema = new Schema<IRefreshToken>(
   }
 );
 
+RefreshTokenSchema.index({ tokenHash: 1, revoked: 1, expiresAt: 1 });
+
 const RefreshToken: Model<IRefreshToken> =
   mongoose.models.RefreshToken ||
   mongoose.model<IRefreshToken>(

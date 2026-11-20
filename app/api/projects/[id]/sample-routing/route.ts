@@ -305,19 +305,27 @@ export async function POST(
     await ProjectSupply.insertMany(documents);
 
     // Sync to SupplierAllocation and SupplierProject for each supplier
-    await SupplierAllocation.deleteMany({ project: project._id });
+    await SupplierAllocation.deleteMany({
+      project: project._id,
+      status: { $ne: "removed" },
+    });
     for (const doc of documents) {
       const supplyDoc = supplyMap.get(doc.supply.toString());
-      let supplierUser = await User.findOne({
+      const supplierUser = await User.findOne({
+        role: "supplier",
         $or: [
           { supplierCode: supplyDoc?.supplierCode },
           { supplierId: supplyDoc?._id },
         ],
       });
-      if (!supplierUser) {
-        supplierUser = await User.findOne({ role: 'supplier' });
-      }
       if (supplierUser) {
+        const removedAllocation = await SupplierAllocation.exists({
+          project: project._id,
+          supplierId: supplierUser._id,
+          status: "removed",
+        });
+        if (removedAllocation) continue;
+
         await SupplierAllocation.create({
           project: project._id,
           supplierId: supplierUser._id,
@@ -327,7 +335,7 @@ export async function POST(
           allocatedCpi: doc.allocatedCpi,
           routingPercent: doc.routingPercent,
           priority: doc.priority,
-          status: 'active',
+          status: 'incoming',
           allocatedAt: new Date(),
         });
 
@@ -345,7 +353,7 @@ export async function POST(
               totalValue: doc.allocatedSample * doc.allocatedCpi,
               loi: project.loi || 10,
               ir: project.ir || 30,
-              status: 'active',
+              status: 'incoming',
               deadlineDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
               description: project.audienceDescription || '',
             },

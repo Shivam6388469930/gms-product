@@ -55,6 +55,7 @@ interface SupplierContextType {
   declineIncomingProject: (projectId: string) => Promise<ActionResult>;
   toggleProjectPause: (projectId: string) => Promise<ActionResult>;
   markProjectComplete: (projectId: string) => Promise<ActionResult>;
+  createSurveyProject: (projectData: any) => Promise<ActionResult & { project?: any; redirectUrls?: any }>;
   createNewPanel: (panel: Omit<SupplierPanel, "id" | "lastRefreshed">) => Promise<SupplierPanel | null>;
   updatePanel: (panelId: string, updates: Partial<SupplierPanel>) => Promise<boolean>;
   deletePanel: (panelId: string) => Promise<boolean>;
@@ -105,18 +106,30 @@ export function SupplierProvider({ children }: { children: React.ReactNode }) {
     ].forEach((k) => localStorage.removeItem(k));
   }, []);
 
-  // Load everything from the backend (supplier is resolved server-side from the JWT)
+  // Load everything from the backend concurrently
   const refreshData = useCallback(async () => {
     setIsSyncing(true);
     try {
-      // 0. Supplier profile
-      const profileRes = await fetch("/api/supplier/profile", {
-        credentials: "include",
-      }).catch(() => null);
+      const [
+        profileRes,
+        panelsRes,
+        projectsRes,
+        actRes,
+        revRes,
+        keysRes,
+      ] = await Promise.all([
+        fetch("/api/supplier/profile", { credentials: "include" }).catch(() => null),
+        fetch("/api/supplier/panels", { credentials: "include" }).catch(() => null),
+        fetch("/api/supplier/projects", { credentials: "include" }).catch(() => null),
+        fetch("/api/supplier/activity", { credentials: "include" }).catch(() => null),
+        fetch("/api/supplier/revenue", { credentials: "include" }).catch(() => null),
+        fetch("/api/supplier/api-keys", { credentials: "include" }).catch(() => null),
+      ]);
 
+      // 0. Supplier profile
       if (profileRes && profileRes.ok) {
-        const profData = await profileRes.json();
-        if (profData.success && profData.supplier) {
+        const profData = await profileRes.json().catch(() => null);
+        if (profData?.success && profData.supplier) {
           setSupplierProfile(profData.supplier);
           setSupplierName(profData.supplier.supplierName);
           setSupplierCode(profData.supplier.supplierCode || "");
@@ -127,12 +140,9 @@ export function SupplierProvider({ children }: { children: React.ReactNode }) {
       }
 
       // 1. Panels
-      const panelsRes = await fetch("/api/supplier/panels", {
-        credentials: "include",
-      }).catch(() => null);
       if (panelsRes && panelsRes.ok) {
-        const panelsData = await panelsRes.json();
-        if (panelsData.success && Array.isArray(panelsData.panels)) {
+        const panelsData = await panelsRes.json().catch(() => null);
+        if (panelsData?.success && Array.isArray(panelsData.panels)) {
           setPanels(panelsData.panels);
           setIsLiveBackend(true);
           setDataSource("database");
@@ -140,12 +150,9 @@ export function SupplierProvider({ children }: { children: React.ReactNode }) {
       }
 
       // 2. Projects
-      const projectsRes = await fetch("/api/supplier/projects", {
-        credentials: "include",
-      }).catch(() => null);
       if (projectsRes && projectsRes.ok) {
-        const projData = await projectsRes.json();
-        if (projData.success && Array.isArray(projData.projects)) {
+        const projData = await projectsRes.json().catch(() => null);
+        if (projData?.success && Array.isArray(projData.projects)) {
           setProjects(projData.projects);
           setIsLiveBackend(true);
           setDataSource("database");
@@ -153,34 +160,25 @@ export function SupplierProvider({ children }: { children: React.ReactNode }) {
       }
 
       // 3. Respondent activity
-      const actRes = await fetch("/api/supplier/activity", {
-        credentials: "include",
-      }).catch(() => null);
       if (actRes && actRes.ok) {
-        const actData = await actRes.json();
-        if (actData.success && Array.isArray(actData.logs)) {
+        const actData = await actRes.json().catch(() => null);
+        if (actData?.success && Array.isArray(actData.logs)) {
           setRespondentLogs(actData.logs);
         }
       }
 
       // 4. Revenue
-      const revRes = await fetch("/api/supplier/revenue", {
-        credentials: "include",
-      }).catch(() => null);
       if (revRes && revRes.ok) {
-        const revData = await revRes.json();
-        if (revData.success && Array.isArray(revData.revenue)) {
+        const revData = await revRes.json().catch(() => null);
+        if (revData?.success && Array.isArray(revData.revenue)) {
           setRevenue(revData.revenue);
         }
       }
 
       // 5. API keys
-      const keysRes = await fetch("/api/supplier/api-keys", {
-        credentials: "include",
-      }).catch(() => null);
       if (keysRes && keysRes.ok) {
-        const keysData = await keysRes.json();
-        if (keysData.success && Array.isArray(keysData.apiKeys)) {
+        const keysData = await keysRes.json().catch(() => null);
+        if (keysData?.success && Array.isArray(keysData.apiKeys)) {
           setApiKeys(keysData.apiKeys);
         }
       }
@@ -274,6 +272,32 @@ export function SupplierProvider({ children }: { children: React.ReactNode }) {
             }
       )
     );
+
+  const createSurveyProject = async (projectData: any) => {
+    try {
+      const res = await fetch("/api/supplier/projects", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(projectData),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        return {
+          success: false,
+          error: data.error || data.message || "Failed to create project",
+        };
+      }
+      await refreshData();
+      return {
+        success: true,
+        project: data.project,
+        redirectUrls: data.redirectUrls,
+      };
+    } catch (e: any) {
+      return { success: false, error: e?.message || "Network error" };
+    }
+  };
 
   // ---------------- Panels ----------------
 
@@ -453,6 +477,7 @@ export function SupplierProvider({ children }: { children: React.ReactNode }) {
         declineIncomingProject,
         toggleProjectPause,
         markProjectComplete,
+        createSurveyProject,
         createNewPanel,
         updatePanel,
         deletePanel,

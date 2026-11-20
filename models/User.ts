@@ -31,6 +31,12 @@ export interface IUser extends Document {
 
   supplierCode?: string;
   supplierId?: mongoose.Types.ObjectId;
+  supplierPostbackUrls?: {
+    complete: string;
+    disqualified: string;
+    quotaFull: string;
+    securityTerminate: string;
+  };
 
   respondentId?: string;
   mustChangePassword:boolean;
@@ -121,6 +127,13 @@ const UserSchema = new Schema<IUser>(
       type: Schema.Types.ObjectId,
       ref: "Supply",
       index: true,
+    },
+
+    supplierPostbackUrls: {
+      complete: { type: String, default: "", trim: true },
+      disqualified: { type: String, default: "", trim: true },
+      quotaFull: { type: String, default: "", trim: true },
+      securityTerminate: { type: String, default: "", trim: true },
     },
 
     respondentId: {

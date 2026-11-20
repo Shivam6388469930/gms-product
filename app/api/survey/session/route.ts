@@ -1,264 +1,753 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
+
 import { connectDB } from "@/config/db";
-import SurveySession from "@/models/SurveySession";
-import Project from "@/models/Project";
-import Respondent from "@/models/Respondent";
-import SupplierAllocation from "@/models/SupplierAllocation";
-import SupplierPanel from "@/models/SupplierPanel";
-import User from "@/models/User";
-import { getCurrentUser } from "@/lib/auth";
+import RespondentSession from "@/models/RespondentSession";
+import { findProjectByIdOrProjectId } from "@/lib/project-resolver";
+import {
+  buildClientSurveyUrl,
+  isRespondentPlaceholder,
+} from "@/lib/survey-urls";
 
 /**
  * POST /api/survey/session
- * Generates a secure SurveySession connecting:
- * Respondent + Supplier + Panel + Project + Survey
- * Generates opaque random sessionToken; public URLs do not expose MongoDB IDs.
+ *
+ * Creates/retrieves a respondent survey session.
+ *
+ * IMPORTANT:
+ * This route now uses the same RespondentSession architecture
+ * as /api/survey/start.
+ *
+ * It does NOT create SurveySession records.
+ *
+ * Example:
+ *
+ * POST /api/survey/session
+ *
+ * {
+ *   "projectId": "GMS82473",
+ *   "respondentId": "TEST001",
+ *   "supplierCode": "SUP001"
+ * }
  */
 export async function POST(req: NextRequest) {
   try {
     await connectDB();
+
     const body = await req.json().catch(() => ({}));
 
-    let {
-      projectId,
-      respondentId,
-      panelId,
-      supplierId,
-      supplierCode,
-    } = body;
+    const projectId = String(
+      body.projectId ||
+      body.pid ||
+      body.project ||
+      ""
+    ).trim();
 
-    // Optional authentication check: if respondent is logged in, attach their record
-    const currentUser = await getCurrentUser();
-    if (currentUser && currentUser.role === "respondent" && !respondentId) {
-      const resp = await Respondent.findOne({
-        $or: [
-          { userId: currentUser._id },
-          { email: currentUser.email.toLowerCase() },
-          ...(currentUser.respondentId ? [{ respondentId: currentUser.respondentId }] : []),
-        ],
-      });
-      if (resp) {
-        respondentId = resp.respondentId;
-        if (!panelId && resp.panelId) panelId = resp.panelId.toString();
-        if (!supplierId && resp.supplierId) supplierId = resp.supplierId.toString();
-      }
+    const respondentId = String(
+      body.respondentId ||
+      body.rid ||
+      body.respondent ||
+      ""
+    ).trim();
+
+    const supplierCode = String(
+      body.supplierCode ||
+      body.sup ||
+      body.source ||
+      "DIRECT"
+    ).trim();
+
+    // =========================================================
+    // 1. VALIDATE PROJECT
+    // =========================================================
+
+    if (!projectId) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Project ID is required",
+          error: "Project ID is required",
+        },
+        { status: 400 }
+      );
     }
 
-    // Validate project
-    let project: any = null;
-    if (projectId) {
-      project = await Project.findById(projectId);
+    // =========================================================
+    // 2. VALIDATE RESPONDENT
+    // =========================================================
+
+    if (!respondentId) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Respondent ID is required",
+          error: "Respondent ID is required",
+        },
+        { status: 400 }
+      );
     }
-    if (!project) {
-      project = await Project.findOne({ status: { $in: ["live", "draft"] } }).sort({ createdAt: -1 });
+
+    // =========================================================
+    // 3. REJECT PLACEHOLDER
+    // =========================================================
+
+    if (isRespondentPlaceholder(respondentId)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Actual respondent ID is required. The placeholder was not replaced.",
+          error:
+            "Respondent ID placeholder was not replaced",
+          example:
+            `${req.nextUrl.origin}/api/survey/session?pid=${encodeURIComponent(
+              projectId
+            )}&rid=TEST001`,
+        },
+        { status: 400 }
+      );
     }
+
+    // =========================================================
+    // 4. VALIDATE RESPONDENT FORMAT
+    // =========================================================
+
+    if (
+      !/^[a-zA-Z0-9_.\-@]{1,256}$/.test(
+        respondentId
+      )
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid respondent ID format",
+          error: "Invalid respondent ID format",
+        },
+        { status: 400 }
+      );
+    }
+
+    // =========================================================
+    // 5. FIND PROJECT
+    // =========================================================
+
+    const project =
+      await findProjectByIdOrProjectId(projectId);
+
     if (!project) {
       return NextResponse.json(
-        { success: false, message: "No active survey project found" },
+        {
+          success: false,
+          message: "Project not found",
+          error: "Project not found",
+          requestedProjectId: projectId,
+        },
         { status: 404 }
       );
     }
 
-    // Resolve Respondent (either registered with userId or survey-only with userId=null)
-    let respondentDoc: any = null;
-    if (respondentId) {
-      respondentDoc = await Respondent.findOne({
-        $or: [
-          { respondentId },
-          { email: respondentId.toLowerCase() },
-        ],
+    // =========================================================
+    // 6. VALIDATE PROJECT STATUS
+    // =========================================================
+
+    const normalizedStatus = String(
+      project.status || ""
+    )
+      .toLowerCase()
+      .trim();
+
+    const allowedStatuses = [
+      "live",
+      "active",
+    ];
+
+    if (
+      !allowedStatuses.includes(
+        normalizedStatus
+      )
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Project is currently ${project.status || "inactive"
+            }.`,
+          error: "Project is not accepting new respondents",
+          projectId:
+            project.projectId ||
+            String(project._id),
+        },
+        { status: 400 }
+      );
+    }
+
+    // =========================================================
+    // 7. GET CLIENT SURVEY URL
+    // =========================================================
+
+    const rawSurveyUrl = String(
+      project.surveySetup?.surveyUrl ||
+      project.surveyUrl ||
+      ""
+    ).trim();
+
+    if (!rawSurveyUrl) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Survey URL is not configured for this project.",
+          error:
+            "Survey URL is not configured",
+        },
+        { status: 400 }
+      );
+    }
+
+    // =========================================================
+    // 8. REQUEST INFORMATION
+    // =========================================================
+
+    const clientIp =
+      req.headers
+        .get("x-forwarded-for")
+        ?.split(",")[0]
+        ?.trim() ||
+      req.headers.get("x-real-ip") ||
+      "0.0.0.0";
+
+    const userAgent =
+      req.headers.get("user-agent") || "";
+
+    // =========================================================
+    // 9. FIND EXISTING RESPONDENT SESSION
+    // =========================================================
+
+    let session =
+      await RespondentSession.findOne({
+        project: project._id,
+        respondentId,
       });
+
+    // =========================================================
+    // 10. HANDLE EXISTING SESSION
+    // =========================================================
+
+    if (session) {
+      const status = String(
+        session.status || ""
+      )
+        .toLowerCase()
+        .trim();
+
+      // -------------------------------------------------------
+      // COMPLETED
+      // -------------------------------------------------------
+
+      if (status === "completed") {
+        return NextResponse.json({
+          success: true,
+          alreadyFinished: true,
+          outcome: "complete",
+          respondentId,
+          projectId:
+            project.projectId ||
+            String(project._id),
+          resultUrl:
+            `/survey/result?status=complete&rid=${encodeURIComponent(
+              respondentId
+            )}`,
+        });
+      }
+
+      // -------------------------------------------------------
+      // TERMINATED
+      // -------------------------------------------------------
+
+      if (
+        status === "terminated" ||
+        status === "terminate" ||
+        status === "screened_out"
+      ) {
+        return NextResponse.json({
+          success: true,
+          alreadyFinished: true,
+          outcome: "terminate",
+          respondentId,
+          projectId:
+            project.projectId ||
+            String(project._id),
+          resultUrl:
+            `/survey/result?status=terminate&rid=${encodeURIComponent(
+              respondentId
+            )}`,
+        });
+      }
+
+      // -------------------------------------------------------
+      // QUOTA
+      // -------------------------------------------------------
+
+      if (status === "quota_full") {
+        return NextResponse.json({
+          success: true,
+          alreadyFinished: true,
+          outcome: "quota",
+          respondentId,
+          projectId:
+            project.projectId ||
+            String(project._id),
+          resultUrl:
+            `/survey/result?status=quota&rid=${encodeURIComponent(
+              respondentId
+            )}`,
+        });
+      }
+
+      // -------------------------------------------------------
+      // ACTIVE SESSION
+      //
+      // DO NOT increment starts again.
+      // -------------------------------------------------------
+
+      session.ip = clientIp;
+      session.userAgent = userAgent;
+
+      if (supplierCode) {
+        session.supplierCode =
+          supplierCode;
+      }
+
+      session.targetSurveyUrl =
+        rawSurveyUrl;
+
+      await session.save();
+    } else {
+      // =======================================================
+      // 11. CREATE NEW RESPONDENT SESSION
+      // =======================================================
+
+      session =
+        await RespondentSession.create({
+          project: project._id,
+
+          projectId:
+            project.projectId ||
+            String(project._id),
+
+          respondentId,
+
+          supplierCode,
+
+          ip: clientIp,
+
+          userAgent,
+
+          status: "started",
+
+          startedAt: new Date(),
+
+          targetSurveyUrl:
+            rawSurveyUrl,
+        });
+
+      // =======================================================
+      // 12. INCREMENT PROJECT START
+      // =======================================================
+
+      if (!project.progress) {
+        project.progress = {
+          starts: 0,
+          completes: 0,
+          screenouts: 0,
+          quotaFull: 0,
+          qualityRejects: 0,
+          spend: 0,
+        };
+      }
+
+      project.progress.starts =
+        Number(
+          project.progress.starts || 0
+        ) + 1;
+
+      await project.save();
     }
 
-    if (!respondentDoc) {
-      // Find or provision a valid respondent under the supplier/panel
-      respondentDoc = await Respondent.findOne({ status: "Active" }).sort({ createdAt: -1 });
+    // =========================================================
+    // 13. DETERMINE RESPONDENT PARAMETER
+    // =========================================================
+
+    let respondentParam = String(
+      project.respondentParam || ""
+    ).trim();
+
+    if (!respondentParam) {
+      const match =
+        rawSurveyUrl.match(
+          /[?&]([^=&]+)=\{(?:respondentId|respondentID|respondent_id|rid|RID)\}/i
+        );
+
+      if (match?.[1]) {
+        respondentParam =
+          match[1];
+      }
     }
 
-    if (!respondentDoc) {
-      // Create survey-only respondent (userId = null)
-      const supplierUser = await User.findOne({ role: "supplier" });
-      const tempId = `R${Math.floor(10000 + Math.random() * 90000)}`;
-      respondentDoc = await Respondent.create({
-        respondentId: tempId,
-        userId: undefined, // survey-only respondent, no login required
-        supplierId: supplierUser?._id,
-        supplierCode: supplierUser?.supplierCode || "SUP-001",
-        firstName: "Survey",
-        lastName: "Guest",
-        name: "Survey Guest",
-        email: `guest-${tempId}@survey.gms`,
-        country: project.country || "US",
-        status: "Active",
-      });
+    if (!respondentParam) {
+      respondentParam = "rid";
     }
 
-    // Resolve Supplier
-    let supplierUser = await User.findById(respondentDoc.supplierId);
-    if (!supplierUser) {
-      supplierUser = await User.findOne({ role: "supplier" });
+    // =========================================================
+    // 14. BUILD CLIENT SURVEY URL
+    // =========================================================
+
+    const finalClientUrl =
+      buildClientSurveyUrl(
+        rawSurveyUrl,
+        respondentId,
+        respondentParam
+      );
+
+    if (!finalClientUrl) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Unable to build client survey URL",
+          error:
+            "Unable to build client survey URL",
+        },
+        { status: 500 }
+      );
     }
 
-    // Resolve Panel
-    let panelDoc: any = null;
-    const pId = panelId || respondentDoc.panelId || (respondentDoc.panels?.[0]);
-    if (pId) {
-      panelDoc = await SupplierPanel.findById(pId);
-    }
-    if (!panelDoc && supplierUser) {
-      panelDoc = await SupplierPanel.findOne({ supplierId: supplierUser._id });
-    }
+    // =========================================================
+    // 15. GENERATE REDIRECT URLs
+    // =========================================================
 
-    // Calculate CPI and Reward
-    const cpi = Number(project.estimate?.estimatedCpi || project.cpi || 2.5);
-    const rewardAmount = Math.round(cpi * 0.7 * 100) / 100;
+    const baseUrl =
+      (
+        process.env.NEXT_PUBLIC_APP_URL ||
+        process.env.APP_URL ||
+        req.nextUrl.origin
+      )
+        .trim()
+        .replace(/\/+$/, "");
 
-    // Secure opaque random session token
-    const sessionToken = crypto.randomBytes(24).toString("hex");
+    const encodedProjectId =
+      encodeURIComponent(
+        project.projectId ||
+        String(project._id)
+      );
 
-    const session = await SurveySession.create({
-      sessionToken,
-      respondent: respondentDoc._id,
-      respondentId: respondentDoc.respondentId,
-      supplier: supplierUser?._id,
-      supplierCode: respondentDoc.supplierCode || supplierUser?.supplierCode || "SUP-001",
-      panel: panelDoc?._id,
-      project: project._id,
-      surveyId: project.surveySetup?.surveyUrl || `SRV-${project._id.toString().slice(-4).toUpperCase()}`,
-      status: "invited",
-      cpi,
-      rewardAmount,
-      targetSurveyUrl: project.surveySetup?.surveyUrl || "",
-      startedAt: new Date(),
-    });
+    const encodedRespondentId =
+      encodeURIComponent(
+        respondentId
+      );
 
-    const appUrl = process.env.APP_URL || "http://localhost:3000";
-    const publicUrl = `${appUrl}/survey/session/${sessionToken}`;
+    const completeUrl =
+      `${baseUrl}/api/survey/redirect/complete` +
+      `?pid=${encodedProjectId}` +
+      `&rid=${encodedRespondentId}`;
+
+    const terminateUrl =
+      `${baseUrl}/api/survey/redirect/terminate` +
+      `?pid=${encodedProjectId}` +
+      `&rid=${encodedRespondentId}`;
+
+    const quotaUrl =
+      `${baseUrl}/api/survey/redirect/quota` +
+      `?pid=${encodedProjectId}` +
+      `&rid=${encodedRespondentId}`;
+
+    // =========================================================
+    // 16. RESPONSE
+    // =========================================================
 
     return NextResponse.json(
       {
         success: true,
-        sessionToken,
-        publicUrl,
+
         session: {
-          token: sessionToken,
+          id: String(session._id),
           status: session.status,
-          surveyTitle: project.surveyTitle,
-          estimatedLoi: project.loi || 10,
-          rewardAmount,
+          respondentId,
+          projectId:
+            project.projectId ||
+            String(project._id),
+          supplierCode:
+            session.supplierCode,
+          startedAt:
+            session.startedAt,
         },
+
+        survey: {
+          title:
+            project.surveyTitle ||
+            project.name ||
+            "Survey",
+
+          country:
+            project.country || "",
+
+          estimatedLoi:
+            project.loi || 10,
+
+          targetSurveyUrl:
+            finalClientUrl,
+        },
+
+        redirects: {
+          complete: completeUrl,
+          terminate: terminateUrl,
+          quota: quotaUrl,
+        },
+
+        message:
+          "Survey session created successfully",
       },
       { status: 201 }
     );
   } catch (error: any) {
-    console.error("POST /api/survey/session error:", error);
+    console.error(
+      "POST /api/survey/session error:",
+      error
+    );
+
     return NextResponse.json(
-      { success: false, message: error.message || "Failed to create survey session" },
+      {
+        success: false,
+        message:
+          error?.message ||
+          "Failed to create survey session",
+        error:
+          "Failed to create survey session",
+      },
       { status: 500 }
     );
   }
 }
 
 /**
- * GET /api/survey/session?token=...
- * Validates sessionToken and loads session details for respondent survey taking.
- * Never exposes MongoDB IDs to the client.
+ * GET /api/survey/session
+ *
+ * Gets the existing RespondentSession.
+ *
+ * Example:
+ *
+ * /api/survey/session?pid=GMS82473&rid=TEST001
  */
 export async function GET(req: NextRequest) {
   try {
     await connectDB();
-    const token = req.nextUrl.searchParams.get("token");
 
-    if (!token) {
+    const searchParams =
+      req.nextUrl.searchParams;
+
+    const projectId = (
+      searchParams.get("pid") ||
+      searchParams.get("projectId") ||
+      searchParams.get("project") ||
+      ""
+    ).trim();
+
+    const respondentId = (
+      searchParams.get("rid") ||
+      searchParams.get("respondentId") ||
+      searchParams.get("respondent") ||
+      ""
+    ).trim();
+
+    // =========================================================
+    // VALIDATION
+    // =========================================================
+
+    if (!projectId) {
       return NextResponse.json(
-        { success: false, message: "Missing session token" },
+        {
+          success: false,
+          message: "Project ID is required",
+        },
         { status: 400 }
       );
     }
 
-    const session = await SurveySession.findOne({ sessionToken: token })
-      .populate("project", "surveyTitle country audienceType loi ir screener surveySetup status")
-      .populate("panel", "name category")
-      .lean();
+    if (!respondentId) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Respondent ID is required",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (
+      isRespondentPlaceholder(
+        respondentId
+      )
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Actual respondent ID is required",
+        },
+        { status: 400 }
+      );
+    }
+
+    // =========================================================
+    // FIND PROJECT
+    // =========================================================
+
+    const project =
+      await findProjectByIdOrProjectId(
+        projectId
+      );
+
+    if (!project) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Project not found",
+        },
+        { status: 404 }
+      );
+    }
+
+    // =========================================================
+    // FIND SESSION
+    // =========================================================
+
+    const session =
+      await RespondentSession.findOne({
+        project: project._id,
+        respondentId,
+      }).lean();
 
     if (!session) {
       return NextResponse.json(
-        { success: false, message: "Invalid or expired survey session" },
-        { status: 404 }
-      );
-    }
-
-    const project = (session as any).project;
-    if (!project) {
-      return NextResponse.json(
-        { success: false, message: "Survey project no longer exists" },
-        { status: 404 }
-      );
-    }
-
-    // If session is invited, mark as started and update start counters
-    if (session.status === "invited") {
-      const now = new Date();
-      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
-      const userAgent = req.headers.get("user-agent") || "";
-
-      await SurveySession.updateOne(
-        { _id: (session as any)._id },
         {
-          $set: {
-            status: "started",
-            startedAt: now,
-            ip,
-            userAgent,
-          },
-        }
+          success: false,
+          message:
+            "Survey session not found",
+          projectId,
+          respondentId,
+        },
+        { status: 404 }
       );
+    }
 
-      // Increment starts in Project
-      await Project.updateOne(
-        { _id: project._id },
-        { $inc: { "progress.starts": 1 } }
-      ).catch(() => {});
+    // =========================================================
+    // BUILD CLIENT URL
+    // =========================================================
 
-      // Increment starts in SupplierAllocation
-      if (session.supplier) {
-        await SupplierAllocation.updateOne(
-          { project: project._id, supplierId: session.supplier },
-          { $inc: { actualStarts: 1 } }
-        ).catch(() => {});
-      }
+    const rawSurveyUrl = String(
+      project.surveySetup?.surveyUrl ||
+      project.surveyUrl ||
+      ""
+    ).trim();
 
-      // Increment starts in SupplierPanel
-      if (session.panel) {
-        await SupplierPanel.updateOne(
-          { _id: (session.panel as any)._id || session.panel },
-          { $inc: { totalStarts: 1 } }
-        ).catch(() => {});
+    let respondentParam = String(
+      project.respondentParam || ""
+    ).trim();
+
+    if (!respondentParam) {
+      const match =
+        rawSurveyUrl.match(
+          /[?&]([^=&]+)=\{(?:respondentId|respondentID|respondent_id|rid|RID)\}/i
+        );
+
+      if (match?.[1]) {
+        respondentParam =
+          match[1];
       }
     }
 
-    // Return sanitized public survey data (NO sensitive MongoDB IDs)
+    if (!respondentParam) {
+      respondentParam = "rid";
+    }
+
+    const targetSurveyUrl =
+      buildClientSurveyUrl(
+        rawSurveyUrl,
+        respondentId,
+        respondentParam
+      );
+
+    // =========================================================
+    // REDIRECT URLS
+    // =========================================================
+
+    const baseUrl =
+      (
+        process.env.NEXT_PUBLIC_APP_URL ||
+        process.env.APP_URL ||
+        req.nextUrl.origin
+      )
+        .trim()
+        .replace(/\/+$/, "");
+
+    const encodedProjectId =
+      encodeURIComponent(
+        project.projectId ||
+        String(project._id)
+      );
+
+    const encodedRespondentId =
+      encodeURIComponent(
+        respondentId
+      );
+
     return NextResponse.json({
       success: true,
+
       session: {
-        sessionToken: session.sessionToken,
+        id: String(session._id),
+
         status: session.status,
-        surveyTitle: project.surveyTitle,
-        category: project.audienceType || "General",
-        estimatedLoi: project.loi || 10,
-        rewardAmount: session.rewardAmount || 1.5,
-        panelName: (session as any).panel?.name || "GMS Panel",
-        hasScreener: Boolean(project.screener?.enabled && project.screener?.questions?.length > 0),
-        screenerQuestions: project.screener?.enabled ? project.screener.questions : [],
-        targetSurveyUrl: project.surveySetup?.surveyUrl || "",
-        callbackBase: `/api/survey/callback?token=${encodeURIComponent(session.sessionToken)}`,
+
+        projectId:
+          project.projectId ||
+          String(project._id),
+
+        respondentId:
+          session.respondentId,
+
+        supplierCode:
+          session.supplierCode,
+
+        startedAt:
+          session.startedAt,
+
+        targetSurveyUrl,
+
+        redirects: {
+          complete:
+            `${baseUrl}/api/survey/redirect/complete?pid=${encodedProjectId}&rid=${encodedRespondentId}`,
+
+          terminate:
+            `${baseUrl}/api/survey/redirect/terminate?pid=${encodedProjectId}&rid=${encodedRespondentId}`,
+
+          quota:
+            `${baseUrl}/api/survey/redirect/quota?pid=${encodedProjectId}&rid=${encodedRespondentId}`,
+        },
       },
     });
   } catch (error: any) {
-    console.error("GET /api/survey/session error:", error);
+    console.error(
+      "GET /api/survey/session error:",
+      error
+    );
+
     return NextResponse.json(
-      { success: false, message: error.message || "Failed to retrieve survey session" },
+      {
+        success: false,
+        message:
+          error?.message ||
+          "Failed to retrieve survey session",
+      },
       { status: 500 }
     );
   }

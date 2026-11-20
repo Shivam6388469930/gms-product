@@ -6,6 +6,7 @@ import RespondentSession from "@/models/RespondentSession";
 import Respondent from "@/models/Respondent";
 import ProjectSupply from "@/models/ProjectSupply";
 import { dispatchWebhooks } from "@/lib/webhooks";
+import { replaceRespondentPlaceholder } from "@/lib/survey-urls";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -229,10 +230,18 @@ async function handleCallback(req: NextRequest, { params }: RouteContext) {
 
     // Redirect user to completion or termination page
     if (normalizedStatus === "completed") {
-      const targetUrl = project.surveySetup?.qualificationUrl || `/survey/sample-complete?rid=${encodeURIComponent(rid)}`;
+      const rawTargetUrl =
+        project.surveySetup?.qualificationUrl ||
+        `/survey/sample-complete?rid=${encodeURIComponent(rid)}`;
+      const targetUrl = replaceRespondentPlaceholder(rawTargetUrl, rid);
       return NextResponse.redirect(new URL(targetUrl, req.url));
     } else {
-      const termUrl = project.surveySetup?.terminationUrl || `/survey/terminated?reason=${encodeURIComponent(reason || normalizedStatus)}`;
+      const rawTermUrl =
+        project.surveySetup?.terminationUrl ||
+        `/survey/terminated?reason=${encodeURIComponent(
+          reason || normalizedStatus
+        )}`;
+      const termUrl = replaceRespondentPlaceholder(rawTermUrl, rid);
       return NextResponse.redirect(new URL(termUrl, req.url));
     }
   } catch (error) {

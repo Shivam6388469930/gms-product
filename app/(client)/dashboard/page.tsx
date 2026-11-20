@@ -141,7 +141,7 @@ export default function DashboardPage() {
       ({ ok, status, data: res }) => {
         if (!mounted) return;
         if (status === 401) {
-          router.replace("/login");
+          router.replace("/auth/login");
           return;
         }
         if (!ok) {

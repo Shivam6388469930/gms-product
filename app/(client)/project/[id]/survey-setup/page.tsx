@@ -2,6 +2,7 @@
 
 import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import SurveyIntegrationCard from "@/components/SurveyIntegrationCard";
 
 type SurveyType = "external" | "internal";
 
@@ -17,6 +18,7 @@ type SurveySetup = {
 
 type Project = {
   _id: string;
+  projectId?: string;
   name: string;
   country: string;
   audienceType: string;
@@ -622,81 +624,15 @@ function SurveySetupContent() {
 
           {/* Redirect Configuration */}
 
-          <section className="rounded-2xl border border-gray-200 bg-white">
-            <div className="border-b border-gray-200 px-6 py-5">
-              <h2 className="text-base font-semibold text-gray-950">
-                Respondent Redirects
-              </h2>
+         
 
-              <p className="mt-1 text-sm text-gray-500">
-                Configure what happens after qualification,
-                termination or completion.
-              </p>
-            </div>
-
-            <div className="space-y-6 p-6">
-              <Field
-                label="Qualification URL"
-                description="Optional URL used when a respondent qualifies for the survey."
-              >
-                <input
-                  type="url"
-                  value={
-                    form.qualificationUrl
-                  }
-                  onChange={(event) =>
-                    updateField(
-                      "qualificationUrl",
-                      event.target.value
-                    )
-                  }
-                  placeholder="https://example.com/qualified"
-                  disabled={!isDraft}
-                  className="input text-black"
-                />
-              </Field>
-
-              <Field
-                label="Termination URL"
-                description="Optional URL used when a respondent is screened out."
-              >
-                <input
-                  type="url"
-                  value={
-                    form.terminationUrl
-                  }
-                  onChange={(event) =>
-                    updateField(
-                      "terminationUrl",
-                      event.target.value
-                    )
-                  }
-                  placeholder="https://example.com/terminated"
-                  disabled={!isDraft}
-                  className="input text-black"
-                />
-              </Field>
-
-              <Field
-                label="Redirect URL"
-                description="Optional final redirect after survey completion."
-              >
-                <input
-                  type="url"
-                  value={form.redirectUrl}
-                  onChange={(event) =>
-                    updateField(
-                      "redirectUrl",
-                      event.target.value
-                    )
-                  }
-                  placeholder="https://example.com/complete"
-                  disabled={!isDraft}
-                  className="input text-black"
-                />
-              </Field>
-            </div>
-          </section>
+          {/* Client Redirect URLs Section */}
+          <SurveyIntegrationCard
+            projectId={project?.projectId || projectId}
+            surveyUrl={form.surveyUrl}
+            mode="client"
+            showEntryUrl={false}
+          />
 
           {/* Validation */}
 

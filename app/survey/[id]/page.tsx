@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState, useTransition } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { replaceRespondentPlaceholder } from "@/lib/survey-urls";
 
 type Option = {
   id: string;
@@ -35,11 +36,18 @@ function SurveyEntryContent() {
   const projectId = params.id as string;
   const mode = searchParams.get("mode") || "live";
   const urlTestIp = searchParams.get("test_ip") || "";
+  const rawRid = searchParams.get("rid") || "";
+  const isPlaceholderRid =
+    rawRid.includes("{") ||
+    rawRid.includes("[") ||
+    rawRid.toLowerCase() === "undefined" ||
+    rawRid.toLowerCase() === "null";
   const initialRid =
-    searchParams.get("rid") ||
-    `RESP_${Date.now().toString(36)}_${Math.random()
-      .toString(36)
-      .substring(2, 6)}`;
+    rawRid && !isPlaceholderRid
+      ? rawRid
+      : `RESP_${Date.now().toString(36)}_${Math.random()
+          .toString(36)
+          .substring(2, 6)}`;
   const supplierCode = searchParams.get("source") || "GMS-DIRECT";
 
   const [loading, setLoading] = useState(true);
@@ -101,14 +109,22 @@ function SurveyEntryContent() {
             "Access to this survey is restricted. Duplicate IP detected."
         );
         if (data.ip) setClientIp(data.ip);
-        if (data.terminationUrl) setTerminationUrl(data.terminationUrl);
+        if (data.terminationUrl) {
+          const safeTerm = replaceRespondentPlaceholder(
+            data.terminationUrl,
+            respondentId || initialRid
+          );
+          setTerminationUrl(safeTerm);
+        }
         return;
       }
 
       setProject(data.project);
       setQuestions(data.screener?.questions || []);
       setClientIp(data.ip || "");
-      if (data.respondentId) setRespondentId(data.respondentId);
+      if (data.respondentId && !data.respondentId.includes("{") && !data.respondentId.includes("[")) {
+        setRespondentId(data.respondentId);
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to load survey entry"
@@ -159,12 +175,16 @@ function SurveyEntryContent() {
         setOutcomeMessage(
           "Screener passed! You qualify for the study. Redirecting to main survey..."
         );
-        setRedirectUrl(data.redirectUrl);
+        const safeMain = replaceRespondentPlaceholder(
+          data.redirectUrl || "",
+          respondentId || initialRid
+        );
+        setRedirectUrl(safeMain);
 
         // Auto forward to main survey after brief moment
         setTimeout(() => {
-          if (data.redirectUrl) {
-            window.location.href = data.redirectUrl;
+          if (safeMain) {
+            window.location.href = safeMain;
           }
         }, 1500);
       } else {
@@ -174,12 +194,16 @@ function SurveyEntryContent() {
           data.message ||
             "Screener not passed. Your IP address has been recorded and you cannot re-attempt this survey."
         );
-        setRedirectUrl(data.redirectUrl || "/survey/terminated");
+        const safeTerm = replaceRespondentPlaceholder(
+          data.redirectUrl || "/survey/terminated",
+          respondentId || initialRid
+        );
+        setRedirectUrl(safeTerm);
 
         // Auto forward to termination URL after brief delay
         setTimeout(() => {
-          if (data.redirectUrl) {
-            window.location.href = data.redirectUrl;
+          if (safeTerm) {
+            window.location.href = safeTerm;
           }
         }, 3200);
       }

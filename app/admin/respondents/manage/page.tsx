@@ -340,14 +340,14 @@ export default function RespondentManagePage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
+    <div className="min-h-screen bg-black p-6">
       <div className="mx-auto max-w-7xl space-y-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">
+            <h1 className="text-2xl font-bold text-white">
               Respondent Management
             </h1>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-white">
               Create, update, activate, suspend and block respondent accounts.
             </p>
           </div>
@@ -355,7 +355,7 @@ export default function RespondentManagePage() {
           <div className="flex gap-2">
             <button
               onClick={loadRespondents}
-              className="inline-flex items-center gap-2 rounded-lg border bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50"
+              className="inline-flex items-center gap-2 text-white rounded-lg border bg-gray-950 px-4 py-2 text-sm font-medium hover:bg-slate-50"
             >
               <RefreshCw size={16} />
               Refresh
@@ -372,14 +372,14 @@ export default function RespondentManagePage() {
         </div>
 
         <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
-          <StatCard title="Total" value={stats.total} icon={<Users size={18} />} />
+          <StatCard title="Total" value={stats.total} icon={<Users size={18} className=""/>} />
           <StatCard title="Active" value={stats.active} icon={<UserCheck size={18} />} />
           <StatCard title="Inactive" value={stats.inactive} icon={<ShieldAlert size={18} />} />
           <StatCard title="Blocked" value={stats.blocked} icon={<Ban size={18} />} />
           <StatCard title="Suspended" value={stats.suspended} icon={<ShieldAlert size={18} />} />
         </div>
 
-        <div className="rounded-xl border bg-white p-4">
+        <div className="rounded-xl p-4">
           <div className="flex flex-col gap-3 md:flex-row">
             <div className="relative flex-1">
               <Search
@@ -390,14 +390,14 @@ export default function RespondentManagePage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search respondent ID, name, email, phone, supplier code..."
-                className="w-full rounded-lg border py-2.5 pl-10 pr-4 text-sm outline-none focus:border-slate-400"
+                className="w-full rounded-lg text-white bg-gray-950 border py-2.5 pl-10 pr-4 text-sm outline-none focus:border-slate-400"
               />
             </div>
 
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="rounded-lg border bg-white px-4 py-2.5 text-sm"
+              className="rounded-lg border bg-gray-950 text-white px-4 py-2.5 text-sm"
             >
               <option value="">All Status</option>
               <option value="Active">Active</option>
@@ -411,7 +411,7 @@ export default function RespondentManagePage() {
         <div className="overflow-hidden rounded-xl border bg-white">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1100px] text-left text-sm">
-              <thead className="border-b bg-slate-50 text-xs uppercase text-slate-500">
+              <thead className="border-b bg-gray-800 text-xs uppercase text-slate-500">
                 <tr>
                   <th className="px-5 py-3">Respondent</th>
                   <th className="px-5 py-3">Supplier</th>
@@ -424,7 +424,7 @@ export default function RespondentManagePage() {
                 </tr>
               </thead>
 
-              <tbody className="divide-y">
+              <tbody className="divide-y bg-gray-950">
                 {loading ? (
                   <tr>
                     <td colSpan={8} className="py-12 text-center">
@@ -748,7 +748,7 @@ function StatCard({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border bg-white p-4">
+    <div className="rounded-xl border bg-gray-950 p-4">
       <div className="mb-3 flex items-center justify-between text-slate-500">
         <span className="text-sm">{title}</span>
         {icon}

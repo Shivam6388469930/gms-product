@@ -5,6 +5,8 @@ import bcrypt from "bcryptjs";
 
 import { connectDB } from "@/config/db";
 import User from "@/models/User";
+import Respondent from "@/models/Respondent";
+import { getOrCreateInternalSupplier, INTERNAL_SUPPLIER_CODE } from "@/lib/internal-supplier";
 
 import {
   generateRandomToken,
@@ -99,11 +101,29 @@ export async function POST(
     const verificationToken =
       generateRandomToken();
 
+    // Prepare supplier and respondent details if registering as respondent
+    let supplierCode: string | undefined = undefined;
+    let supplierId: any = undefined;
+    let respondentId: string | undefined = undefined;
+
+    if (role === "respondent") {
+      const internalSupplier = await getOrCreateInternalSupplier();
+      supplierCode = INTERNAL_SUPPLIER_CODE;
+      supplierId = internalSupplier.supplierId;
+      respondentId = `RESP_${Date.now().toString(36).toUpperCase()}_${Math.random()
+        .toString(36)
+        .slice(2, 6)
+        .toUpperCase()}`;
+    }
+
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
       role,
+      ...(supplierCode ? { supplierCode } : {}),
+      ...(supplierId ? { supplierId } : {}),
+      ...(respondentId ? { respondentId } : {}),
 
       emailVerified: false,
 
@@ -118,6 +138,41 @@ export async function POST(
 
       isBlocked: false,
     });
+
+    // Create linked Respondent document under Internal Supplier
+    if (role === "respondent" && respondentId && supplierId) {
+      try {
+        const nameParts = name.split(/\s+/).filter(Boolean);
+        const firstName = nameParts[0] || "Respondent";
+        const lastName = nameParts.slice(1).join(" ") || "Panelist";
+
+        await Respondent.create({
+          respondentId,
+          userId: user._id,
+          supplierId,
+          supplierCode: INTERNAL_SUPPLIER_CODE,
+          firstName,
+          lastName,
+          name,
+          email,
+          country: "US",
+          status: "Active",
+          qualityScore: 100,
+          fraudRiskScore: 0,
+          totalEarnings: 0,
+          pendingEarnings: 0,
+          paidEarnings: 0,
+          totalSurveys: 0,
+          completedSurveys: 0,
+          screenouts: 0,
+          quotaFull: 0,
+          qualityRejects: 0,
+          lastActiveAt: new Date(),
+        });
+      } catch (respErr: any) {
+        console.warn("[Register] Could not pre-create Respondent document:", respErr?.message);
+      }
+    }
 
     const appUrl =
       process.env.APP_URL ||

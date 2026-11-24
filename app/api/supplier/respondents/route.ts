@@ -67,10 +67,17 @@ export async function GET(request: NextRequest) {
     const ageGroup = (searchParams.get("ageGroup") || "").trim();
     const minQuality = Number(searchParams.get("minQuality") || 0);
 
-    // supplierId ALWAYS comes from the JWT, never from the client
-    const query: Record<string, any> = {
-      supplierId: supplierCtx.supplierId,
-    };
+    // supplierId / supplierCode ALWAYS comes from the JWT, never from the client
+    const query: Record<string, any> = supplierCtx.supplierCode
+      ? {
+          $or: [
+            { supplierId: supplierCtx.supplierId },
+            { supplierCode: supplierCtx.supplierCode },
+          ],
+        }
+      : {
+          supplierId: supplierCtx.supplierId,
+        };
 
     if (status && ["Active", "Inactive", "Blocked", "Suspended"].includes(status)) {
       query.status = status;

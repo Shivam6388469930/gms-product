@@ -9,6 +9,7 @@ import RespondentSession from "@/models/RespondentSession";
 import Project from "@/models/Project";
 import Supply from "@/models/Supply";
 import SupplierPanel from "@/models/SupplierPanel";
+import { getOrCreateInternalSupplier, INTERNAL_SUPPLIER_CODE } from "@/lib/internal-supplier";
 
 function toStringValue(value: any): string {
   if (value === null || value === undefined) return "";
@@ -127,23 +128,17 @@ export async function GET(_request: NextRequest) {
             String(user.role || "").toLowerCase()
           )
         ) {
-          const activeSupply = await Supply.findOne({
-            active: true,
-          }).lean();
-
-          const supplierCode =
-            toStringValue(
-              (activeSupply as any)?.supplierCode
-            ) || "1452";
+          const internalSupplier = await getOrCreateInternalSupplier();
+          const supplierCode = INTERNAL_SUPPLIER_CODE;
 
           const count =
             await Respondent.countDocuments({
               supplierCode,
             });
 
-          const respondentId = `R${String(
-            count + 1
-          ).padStart(5, "0")}`;
+          const respondentId =
+            user.respondentId ||
+            `R${String(count + 1).padStart(5, "0")}`;
 
           const names = String(user.name || "")
             .trim()
@@ -163,9 +158,8 @@ export async function GET(_request: NextRequest) {
 
               supplierCode,
 
-              // Keep the actual supplier ID.
-              supplierId:
-                (activeSupply as any)?._id || null,
+              // Internal supplier ID
+              supplierId: internalSupplier.supplierId,
 
               firstName,
               lastName,

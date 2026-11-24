@@ -267,7 +267,7 @@ export default function SuppliersPage() {
           <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/60 p-5 backdrop-blur">
             <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Total Supply Nodes</div>
             <div className="text-2xl font-bold text-white mt-1">{suppliers.length}</div>
-            <div className="text-xs text-emerald-400 mt-1">{activeCount} actively routing live sample</div>
+            <div className="text-xs text-emerald-400 mt-1">{activeCount} active supplier sources</div>
           </div>
           <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/60 p-5 backdrop-blur">
             <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Aggregate Available Sample</div>
@@ -365,7 +365,7 @@ export default function SuppliersPage() {
             </label>
             <label className="flex items-center gap-2 text-xs font-semibold text-zinc-300">
               <input type="checkbox" checked={form.active} onChange={(event) => updateField("active", event.target.checked)} className="h-4 w-4 rounded border-zinc-700 bg-zinc-800 text-indigo-600 focus:ring-0" />
-              <span>Enable for automated live sample routing</span>
+              <span>Include in automatic supplier assignment</span>
             </label>
 
             <div className="flex flex-wrap items-center gap-3 sm:col-span-2 lg:col-span-3 pt-2">

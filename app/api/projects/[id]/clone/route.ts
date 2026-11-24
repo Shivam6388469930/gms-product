@@ -5,6 +5,11 @@ import Project from "@/models/Project";
 import { getUserId } from "@/lib/auth";
 import { fail, unauthorized } from "@/lib/api";
 import { estimateProject } from "@/lib/feasibility";
+import {
+  assignSuppliersToProject,
+  buildSupplierAllocationPlan,
+  SupplierAllocationError,
+} from "@/lib/auto-allocate-suppliers";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -26,6 +31,20 @@ export async function POST(_req: Request, { params }: Ctx) {
     if (!source) return fail("Project not found", 404);
 
     const src = source as any;
+
+    let supplierPlan;
+    try {
+      supplierPlan = await buildSupplierAllocationPlan(
+        src.country,
+        src.audienceType,
+        src.sampleSize
+      );
+    } catch (error) {
+      if (error instanceof SupplierAllocationError) {
+        return fail(error.message, 400);
+      }
+      throw error;
+    }
 
     // Re-run feasibility for current supply data
     let estimate;
@@ -78,6 +97,8 @@ export async function POST(_req: Request, { params }: Ctx) {
         spend: 0,
       },
     });
+
+    await assignSuppliersToProject(clone, supplierPlan);
 
     return NextResponse.json({
       success: true,

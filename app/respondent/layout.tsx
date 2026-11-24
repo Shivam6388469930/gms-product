@@ -152,33 +152,27 @@ function RespondentLayoutContent({
     },
 
     {
-      name: "Screenings",
-      href: "/respondent/screenings",
-      icon: FilterX,
-    },
-
-    {
       name: "Survey History",
       href: "/respondent/history",
       icon: History,
     },
 
-    {
-      name: "Rewards",
-      href: "/respondent/rewards",
-      icon: Gift,
-      badge: `$${usdBalance.toFixed(
-        2
-      )}`,
-      badgeColor:
-        "bg-amber-500/10 text-amber-300 border border-amber-500/20",
-    },
+    // {
+    //   name: "Rewards",
+    //   href: "/respondent/rewards",
+    //   icon: Gift,
+    //   badge: `$${usdBalance.toFixed(
+    //     2
+    //   )}`,
+    //   badgeColor:
+    //     "bg-amber-500/10 text-amber-300 border border-amber-500/20",
+    // },
 
-    {
-      name: "Wallet",
-      href: "/respondent/rewards",
-      icon: Wallet,
-    },
+    // {
+    //   name: "Wallet",
+    //   href: "/respondent/rewards",
+    //   icon: Wallet,
+    // },
 
     {
       name: "Profile",
@@ -290,11 +284,10 @@ function RespondentLayoutContent({
       ====================================================== */}
 
       <aside
-        className={`${
-          mobileMenuOpen
+        className={`${mobileMenuOpen
             ? "block"
             : "hidden"
-        } md:flex flex-col w-full md:w-64 lg:w-72 border-r border-zinc-800/80 bg-zinc-950 shrink-0 md:sticky md:top-0 md:h-screen z-40`}
+          } md:flex flex-col w-full md:w-64 lg:w-72 border-r border-zinc-800/80 bg-zinc-950 shrink-0 md:sticky md:top-0 md:h-screen z-40`}
       >
 
         {/* BRAND + USER */}
@@ -357,42 +350,7 @@ function RespondentLayoutContent({
           </div>
 
           {/* BALANCE */}
-          <div className="rounded-xl bg-gradient-to-br from-zinc-900 via-zinc-900 to-emerald-950/30 border border-emerald-500/20 p-3.5 space-y-2">
 
-            <div className="flex items-center justify-between text-xs text-zinc-400">
-
-              <span className="flex items-center gap-1.5">
-                <Wallet
-                  size={13}
-                  className="text-emerald-400"
-                />
-
-                Available Rewards:
-              </span>
-
-              <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                {tierName}
-              </span>
-
-            </div>
-
-            <div className="flex items-baseline justify-between">
-
-              <div className="text-2xl font-black text-white tracking-tight">
-                $
-                {usdBalance.toFixed(
-                  2
-                )}
-              </div>
-
-              <div className="text-xs font-mono text-zinc-400">
-                {pointsBalance.toLocaleString()}{" "}
-                pts
-              </div>
-
-            </div>
-
-          </div>
 
         </div>
 
@@ -421,22 +379,20 @@ function RespondentLayoutContent({
                       false
                     )
                   }
-                  className={`group flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
-                    isActive
+                  className={`group flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${isActive
                       ? "bg-emerald-600 text-white font-semibold shadow-lg shadow-emerald-600/20"
                       : "text-zinc-300 hover:text-white hover:bg-zinc-900/80"
-                  }`}
+                    }`}
                 >
 
                   <div className="flex items-center gap-3">
 
                     <Icon
                       size={17}
-                      className={`${
-                        isActive
+                      className={`${isActive
                           ? "text-white"
                           : "text-zinc-400 group-hover:text-emerald-400"
-                      } transition-colors`}
+                        } transition-colors`}
                     />
 
                     <span>
@@ -447,11 +403,10 @@ function RespondentLayoutContent({
 
                   {item.badge && (
                     <span
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                        isActive
+                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${isActive
                           ? "bg-white/20 text-white"
                           : item.badgeColor
-                      }`}
+                        }`}
                     >
                       {item.badge}
                     </span>
@@ -587,8 +542,8 @@ function RespondentLayoutContent({
 
               {unreadNotifications >
                 0 && (
-                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-zinc-950" />
-              )}
+                  <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-zinc-950" />
+                )}
 
             </Link>
 

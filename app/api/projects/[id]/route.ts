@@ -7,6 +7,12 @@ import { connectDB } from "@/config/db";
 import Project from "@/models/Project";
 import { getUserId } from "@/lib/auth";
 import { fail, unauthorized } from "@/lib/api";
+import {
+  assignSuppliersToProject,
+  buildSupplierAllocationPlan,
+  SupplierAllocationError,
+  type SupplierAllocationPlan,
+} from "@/lib/auto-allocate-suppliers";
 
 type Ctx = {
   params: Promise<{ id: string }>;
@@ -991,16 +997,14 @@ export async function PATCH(
     }
 
     /* -------------------------------------------------------
-       DRAFT CHECK
+       EDIT CHECK (Live, Draft, Paused projects can all be edited)
     ------------------------------------------------------- */
-
     if (
-      (project as any).status &&
-      (project as any).status !==
-        "draft"
+      (project as any).status === "stopped" ||
+      (project as any).status === "archived"
     ) {
       return fail(
-        "Only draft projects can be edited",
+        "Archived or stopped projects cannot be edited",
         400,
       );
     }
@@ -1254,6 +1258,27 @@ export async function PATCH(
       }
     }
 
+    const shouldReallocateSuppliers =
+      (section === "basic" &&
+        (hasOwn(data, "country") || hasOwn(data, "audienceType"))) ||
+      (section === "sample" && hasOwn(data, "sampleSize"));
+
+    let supplierPlan: SupplierAllocationPlan | undefined;
+    if (shouldReallocateSuppliers) {
+      try {
+        supplierPlan = await buildSupplierAllocationPlan(
+          project.country,
+          project.audienceType,
+          project.sampleSize
+        );
+      } catch (error) {
+        if (error instanceof SupplierAllocationError) {
+          return fail(error.message, 400);
+        }
+        throw error;
+      }
+    }
+
     /* =======================================================
        VALIDATE + SAVE
     ======================================================= */
@@ -1261,6 +1286,10 @@ export async function PATCH(
     await project.validate();
 
     await project.save();
+
+    if (supplierPlan) {
+      await assignSuppliersToProject(project, supplierPlan);
+    }
 
     return NextResponse.json({
       success: true,

@@ -1,9 +1,11 @@
 "use client";
 
-import React, { Suspense, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogoutButton } from "@/components/Logoutbutton";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { authFetch } from "@/lib/auth-client";
 import {
   PlusCircle,
   Shield,
@@ -26,6 +28,12 @@ import {
   Search,
 } from "lucide-react";
 
+type CurrentUser = {
+  name: string;
+  email: string;
+  role: string;
+};
+
 function AppLayoutContent({
   children,
 }: {
@@ -38,6 +46,52 @@ function AppLayoutContent({
   const [reportsDropdownOpen, setReportsDropdownOpen] = useState(false);
   const [adminDropdownOpen, setAdminDropdownOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadCurrentUser() {
+      try {
+        const response = await authFetch("/api/auth/me", {
+          cache: "no-store",
+        });
+        const data: {
+          success?: boolean;
+          message?: string;
+          user?: CurrentUser | null;
+        } = await response.json();
+
+        if (!response.ok || !data.success || !data.user) {
+          throw new Error(data.message || "Failed to load account details");
+        }
+
+        if (active) {
+          setCurrentUser(data.user);
+        }
+      } catch (error) {
+        console.error("Failed to load navbar user:", error);
+      }
+    }
+
+    void loadCurrentUser();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const displayName = currentUser?.name || currentUser?.email || "Account";
+  const initials =
+    displayName
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join("") || "?";
+  const roleLabel = currentUser?.role
+    ? currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)
+    : "Loading account";
 
   const portals = [
     {
@@ -333,6 +387,8 @@ function AppLayoutContent({
               <Grid size={17} />
             </button>
 
+            <ThemeToggle />
+
             {/* USER */}
             <div className="relative">
               <button
@@ -345,7 +401,7 @@ function AppLayoutContent({
                 }}
                 className="flex items-center justify-center h-8 w-8 rounded-full bg-[#521360] hover:bg-[#68187a] border border-purple-300/30 text-white font-semibold text-xs transition"
               >
-                RB
+                {initials}
               </button>
 
               {userDropdownOpen && (
@@ -361,11 +417,11 @@ function AppLayoutContent({
 
                     <div className="px-3 py-2 border-b border-purple-900/50">
                       <div className="text-xs font-semibold text-white">
-                        Ratan Bhan
+                        {displayName}
                       </div>
 
                       <div className="text-[11px] text-zinc-400">
-                        Project Manager / Client
+                        {roleLabel}
                       </div>
                     </div>
 

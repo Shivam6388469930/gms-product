@@ -6,6 +6,7 @@ import { findProjectByIdOrProjectId } from "@/lib/project-resolver";
 import {
   buildClientSurveyUrl,
   isRespondentPlaceholder,
+  replaceRespondentPlaceholder,
 } from "@/lib/survey-urls";
 
 /**
@@ -191,6 +192,37 @@ export async function GET(req: NextRequest) {
             project.projectId || String(project._id),
         },
         { status: 400 }
+      );
+    }
+
+    // =========================================================
+    // 9b. CHECK QUOTA COMPLETION
+    //
+    // Quota 10 = 10 successful completes required.
+    // If completes >= sampleSize, quota is closed.
+    // =========================================================
+
+    if (
+      project.sampleSize &&
+      Number(project.progress?.completes || 0) >= Number(project.sampleSize)
+    ) {
+      const quotaUrl =
+        project.surveySetup?.quotaUrl ||
+        project.surveySetup?.terminationUrl;
+
+      if (quotaUrl) {
+        return NextResponse.redirect(
+          replaceRespondentPlaceholder(quotaUrl, rid)
+        );
+      }
+
+      return NextResponse.redirect(
+        new URL(
+          `/survey/result?status=quota&rid=${encodeURIComponent(
+            rid
+          )}&pid=${encodeURIComponent(pid)}`,
+          req.url
+        )
       );
     }
 

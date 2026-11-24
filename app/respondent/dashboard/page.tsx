@@ -21,6 +21,7 @@ import { useRespondent } from "@/lib/respondent-store";
 
 export default function RespondentDashboardPage() {
   const {
+    respondentName,
     pointsBalance,
     usdBalance,
     lifetimeEarnings,
@@ -79,7 +80,7 @@ export default function RespondentDashboardPage() {
               <span>{tierName} • Active Respondent Member</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-              Welcome back, Alex!
+              Welcome back, {respondentName || "Member"}!
             </h1>
             <p className="mt-1 text-sm text-zinc-400 max-w-xl">
               You have <span className="text-emerald-400 font-semibold">{opportunities.length} surveys matched</span> to your profile today. Complete them to earn instant points and cash rewards.
@@ -141,7 +142,7 @@ export default function RespondentDashboardPage() {
             ${lifetimeEarnings.toFixed(2)}
           </div>
           <div className="mt-2 text-xs text-zinc-400">
-            Across {completedSurveys.length + 64} total survey participations
+            Across {completedSurveys.length} verified survey completions
           </div>
         </div>
 

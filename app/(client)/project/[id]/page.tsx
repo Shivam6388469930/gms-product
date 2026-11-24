@@ -24,10 +24,8 @@ const editableTabs: Array<{ id: Section; label: string }> = [
 ];
 
 const navigationTabs = [
-    { label: "Screener", path: "screener" },
+  { label: "Screener", path: "screener" },
   { label: "Survey Setup", path: "survey-setup" },
-
-  { label: "Routing / Allocation", path: "sample-routing" },
   { label: "Review & Launch", path: "review" },
 ];
 
@@ -609,7 +607,7 @@ function ProjectDetailContent() {
   }
 
   async function saveSection() {
-    if (!project || project.status !== "draft") return;
+    if (!project || project.status === "stopped") return;
 
     setBusy(true);
     setError("");
@@ -722,7 +720,7 @@ function ProjectDetailContent() {
       ? Math.min(100, Math.round((completes / sampleSize) * 100))
       : 0;
 
-  const canEdit = p.status === "draft";
+  const canEdit = p.status !== "stopped";
 
   return (
     <>

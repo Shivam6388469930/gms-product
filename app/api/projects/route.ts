@@ -6,6 +6,12 @@ import { getUserId } from "@/lib/auth";
 import { fail, unauthorized } from "@/lib/api";
 import { parseProjectInput } from "@/lib/project-validation";
 import { estimateProject } from "@/lib/feasibility";
+import {
+  assignSuppliersToProject,
+  buildSupplierAllocationPlan,
+  SupplierAllocationError,
+  type SupplierAllocationPlan,
+} from "@/lib/auto-allocate-suppliers";
 
 /* =========================================================
    GET /api/projects
@@ -87,6 +93,21 @@ export async function POST(req: Request) {
     ------------------------------------------------------- */
 
     await connectDB();
+
+    let supplierPlan: SupplierAllocationPlan;
+
+    try {
+      supplierPlan = await buildSupplierAllocationPlan(
+        parsed.value.country,
+        parsed.value.audienceType,
+        parsed.value.sampleSize
+      );
+    } catch (error) {
+      if (error instanceof SupplierAllocationError) {
+        return fail(error.message, 400);
+      }
+      throw error;
+    }
 
     /* -------------------------------------------------------
        FEASIBILITY
@@ -174,6 +195,9 @@ export async function POST(req: Request) {
         spend: 0,
       },
     });
+
+    await assignSuppliersToProject(project, supplierPlan);
+
     /* -------------------------------------------------------
        RESPONSE
     ------------------------------------------------------- */

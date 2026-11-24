@@ -354,7 +354,6 @@
 
 //   const [mode, setMode] = useState<"cint" | "advanced">("advanced");
 //   const [projectName, setProjectName] = useState("Template_Genpop");
-//   const [projectManager, setProjectManager] = useState("Ratan Bhan");
 //   const [fieldingAssistant, setFieldingAssistant] = useState(true);
 
 //   const [surveyTitle, setSurveyTitle] = useState("");
@@ -741,9 +740,6 @@
 //     setError("");
 
 //     const trimmedTitle = surveyTitle.trim();
-
-//     const trimmedDescription =
-//       audienceDescription.trim() || `${projectName} - Cint Target Screener Study managed by ${projectManager}`;
 
 //     const n = Number(sampleSize);
 //     const l = Number(loi) || 10;
@@ -1152,23 +1148,6 @@
 //                     🔍
 //                   </div>
 //                 </div>
-//               </div>
-
-//               {/* Project Manager */}
-//               <div className="space-y-1.5">
-//                 <label className="text-xs font-semibold text-zinc-300">
-//                   Project Manager
-//                 </label>
-//                 <select
-//                   value={projectManager}
-//                   onChange={(e) => setProjectManager(e.target.value)}
-//                   disabled={saving}
-//                   className="w-full rounded-lg bg-zinc-950 border border-zinc-700/80 px-3.5 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
-//                 >
-//                   <option value="Ratan Bhan">Ratan Bhan</option>
-//                   <option value="Client Admin">Client Admin</option>
-//                   <option value="Operations Lead">Operations Lead</option>
-//                 </select>
 //               </div>
 
 //               {/* Number of Completes* */}
@@ -2609,7 +2588,6 @@ export default function NewProjectPage() {
 
   const [mode, setMode] = useState<"cint" | "advanced">("advanced");
   const [projectName, setProjectName] = useState("Template_Genpop");
-  const [projectManager, setProjectManager] = useState("Ratan Bhan");
   const [fieldingAssistant, setFieldingAssistant] = useState(true);
 
   const [surveyTitle, setSurveyTitle] = useState("");
@@ -2998,7 +2976,7 @@ export default function NewProjectPage() {
     const trimmedTitle = surveyTitle.trim();
 
     const trimmedDescription =
-      audienceDescription.trim() || `${projectName} - Cint Target Screener Study managed by ${projectManager}`;
+      audienceDescription.trim() || `${projectName} - Cint Target Screener Study`;
 
     const n = Number(sampleSize);
     const l = Number(loi) || 10;
@@ -4273,23 +4251,6 @@ export default function NewProjectPage() {
                 </div>
               </div>
 
-              {/* Project Manager */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-300">
-                  Project Manager
-                </label>
-                <select
-                  value={projectManager}
-                  onChange={(e) => setProjectManager(e.target.value)}
-                  disabled={saving}
-                  className="w-full rounded-lg bg-zinc-950 border border-zinc-700/80 px-3.5 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
-                >
-                  <option value="Ratan Bhan">Ratan Bhan</option>
-                  <option value="Client Admin">Client Admin</option>
-                  <option value="Operations Lead">Operations Lead</option>
-                </select>
-              </div>
-
               {/* Number of Completes* */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-zinc-300">
@@ -4471,7 +4432,7 @@ export default function NewProjectPage() {
                 )}
               </div>
 
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">Surveys are saved as drafts. You can configure additional survey setup and routing after creation. Nothing is charged or launched until you press Launch.</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Surveys are saved as drafts. Eligible suppliers are assigned automatically. Nothing is charged or launched until you press Launch.</p>
             </form>
 
             <div className="lg:sticky lg:top-8 lg:self-start"><EstimateCard estimate={estimate} loading={estimating} /></div>

@@ -8,6 +8,7 @@ import Supply from "@/models/Supply";
 import RespondentSession from "@/models/RespondentSession";
 import { generateDefaultScreenerQuestions } from "@/lib/screener-helper";
 import { getUserId } from "@/lib/auth";
+import { buildSupplierAllocationPlan, assignSuppliersToProject } from "@/lib/auto-allocate-suppliers";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -72,7 +73,7 @@ export async function GET(
       0
     );
 
-    const routingCount = allocations.filter(
+    const assignedSupplierCount = allocations.filter(
       (item) =>
         Number(item.allocatedSample || 0) > 0
     ).length;
@@ -80,9 +81,7 @@ export async function GET(
     const surveySetupReady =
       project.surveySetup?.status === "ready";
 
-    const sampleRoutingReady =
-      routingCount > 0 &&
-      totalAllocated === project.sampleSize;
+    const supplierAllocationReady = true;
 
     const estimate = project.estimate as
       | Record<string, unknown>
@@ -113,7 +112,7 @@ export async function GET(
       feasibility: feasibilityReady,
       pricing: pricingReady,
       surveySetup: surveySetupReady,
-      sampleRouting: sampleRoutingReady,
+      supplierAllocation: supplierAllocationReady,
       screenerReady:
         Boolean(screenerConfig.enabled) &&
         screenerConfig.questions.length > 0,
@@ -185,7 +184,7 @@ export async function GET(
         allocatedSample: totalAllocated,
         remainingSample:
           project.sampleSize - totalAllocated,
-        supplierCount: routingCount,
+        supplierCount: assignedSupplierCount,
       },
 
       liveSurveyUrl: `/survey/${project._id}`,
@@ -341,9 +340,9 @@ export async function POST(
     }
 
     /*
-     * Sample routing validation.
+     * Automatic supplier allocation on launch if needed.
      */
-    const allocations = await ProjectSupply.find({
+    let allocations = await ProjectSupply.find({
       project: project._id,
       status: {
         $in: ["active", "completed"],
@@ -351,36 +350,19 @@ export async function POST(
     });
 
     if (!allocations.length) {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            "Sample routing has not been configured.",
-        },
-        { status: 400 }
-      );
-    }
-
-    const totalAllocated =
-      allocations.reduce(
-        (sum, allocation) =>
-          sum +
-          Number(
-            allocation.allocatedSample || 0
-          ),
-        0
-      );
-
-    if (totalAllocated !== project.sampleSize) {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            `Sample allocation must equal ${project.sampleSize}. ` +
-            `Currently allocated: ${totalAllocated}.`,
-        },
-        { status: 400 }
-      );
+      try {
+        const plan = await buildSupplierAllocationPlan(
+          project.country || "US",
+          (project.audienceType as any) || "consumer",
+          project.sampleSize || 100
+        );
+        await assignSuppliersToProject(project as any, plan);
+        allocations = await ProjectSupply.find({
+          project: project._id,
+        });
+      } catch (allocErr) {
+        console.warn("Auto supplier assignment warning on launch:", allocErr);
+      }
     }
 
     /*

@@ -112,7 +112,7 @@ type Checks = {
   feasibility: boolean;
   pricing: boolean;
   surveySetup: boolean;
-  sampleRouting: boolean;
+  supplierAllocation: boolean;
   screenerReady: boolean;
   projectDraft: boolean;
 };
@@ -127,7 +127,7 @@ function ReviewPageContent() {
   const [estimate, setEstimate] = useState<Estimate | null>(null);
   const [surveySetup, setSurveySetup] = useState<SurveySetup | null>(null);
   const [screener, setScreener] = useState<ScreenerConfig | null>(null);
-  const [routing, setRouting] = useState<Routing[]>([]);
+  const [allocations, setAllocations] = useState<Routing[]>([]);
   const [checks, setChecks] = useState<Checks | null>(null);
   const [canLaunch, setCanLaunch] = useState(false);
   const [liveSurveyUrl, setLiveSurveyUrl] = useState("");
@@ -177,7 +177,7 @@ function ReviewPageContent() {
       setEstimate(data.estimate || null);
       setSurveySetup(data.surveySetup || null);
       setScreener(data.screener || null);
-      setRouting(data.routing || []);
+      setAllocations(data.routing || []);
       setChecks(data.checks || null);
       setCanLaunch(Boolean(data.canLaunch));
       setLiveSurveyUrl(data.liveSurveyUrl || `/survey/${projectId}`);
@@ -192,20 +192,20 @@ function ReviewPageContent() {
   }
 
   const totalAllocated = useMemo(() => {
-    return routing.reduce(
+    return allocations.reduce(
       (sum, item) => sum + Number(item.allocatedSample || 0),
       0
     );
-  }, [routing]);
+  }, [allocations]);
 
   const totalSpend = useMemo(() => {
-    return routing.reduce(
+    return allocations.reduce(
       (sum, item) =>
         sum +
         Number(item.allocatedSample || 0) * Number(item.allocatedCpi || 0),
       0
     );
-  }, [routing]);
+  }, [allocations]);
 
   async function launchProject() {
     if (!canLaunch && project?.status === "draft") {
@@ -375,10 +375,10 @@ function ReviewPageContent() {
             </Link>
             <span>/</span>
             <Link
-              href={`/project/${projectId}/sample-routing`}
+              href={`/project/${projectId}/survey-setup`}
               className="hover:text-slate-900"
             >
-              Sample Routing
+              Survey Setup
             </Link>
             <span>/</span>
             <span className="font-medium text-slate-900">
@@ -399,23 +399,21 @@ function ReviewPageContent() {
 
             <div className="flex items-center gap-3">
               <span
-                className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-bold uppercase tracking-wider ${
-                  isLive
-                    ? "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-500/30"
-                    : "bg-amber-100 text-amber-800 ring-1 ring-amber-500/30"
-                }`}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-xs font-bold uppercase tracking-wider ${isLive
+                  ? "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-500/30"
+                  : "bg-amber-100 text-amber-800 ring-1 ring-amber-500/30"
+                  }`}
               >
                 <span
-                  className={`h-2 w-2 rounded-full ${
-                    isLive ? "bg-emerald-600 animate-pulse" : "bg-amber-600"
-                  }`}
+                  className={`h-2 w-2 rounded-full ${isLive ? "bg-emerald-600 animate-pulse" : "bg-amber-600"
+                    }`}
                 />
                 Status: {project.status}
               </span>
 
               {isLive && (
                 <Link
-                  href={`/project-details/${projectId}`}
+                  href={`dashboard`}
                   className="rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
                 >
                   Live Fieldwork Dashboard ↗
@@ -425,7 +423,7 @@ function ReviewPageContent() {
           </div>
         </div>
 
-     
+
 
         {/* Feedback Alerts */}
         {error && (
@@ -532,13 +530,13 @@ function ReviewPageContent() {
               >
                 + Edit / Add Questions
               </Link>
-              <button
+              {/* <button
                 type="button"
                 onClick={() => setSimulatorOpen(true)}
                 className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
               >
                 Launch Screener Sandbox
-              </button>
+              </button> */}
             </div>
           </div>
 
@@ -610,11 +608,10 @@ function ReviewPageContent() {
                   {q.options.map((opt) => (
                     <span
                       key={opt.id}
-                      className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium ${
-                        opt.isQualifying
-                          ? "border border-emerald-300 bg-emerald-50 text-emerald-800"
-                          : "border border-red-200 bg-red-50 text-red-800"
-                      }`}
+                      className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium ${opt.isQualifying
+                        ? "border border-emerald-300 bg-emerald-50 text-emerald-800"
+                        : "border border-red-200 bg-red-50 text-red-800"
+                        }`}
                     >
                       <span>{opt.isQualifying ? "✓ Qualifies:" : "✕ Terminates:"}</span>
                       {opt.label}
@@ -698,19 +695,18 @@ function ReviewPageContent() {
                         </td>
                         <td className="px-4 py-2.5">
                           <span
-                            className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                              sess.status === "qualified"
-                                ? "bg-emerald-100 text-emerald-800"
-                                : sess.status === "screened_out"
+                            className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${sess.status === "qualified"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : sess.status === "screened_out"
                                 ? "bg-red-100 text-red-800"
                                 : "bg-amber-100 text-amber-800"
-                            }`}
+                              }`}
                           >
                             {sess.status === "qualified"
                               ? "PASSED (Qualified)"
                               : sess.status === "screened_out"
-                              ? "SCREENED OUT (Terminated)"
-                              : "BLOCKED (Duplicate IP)"}
+                                ? "SCREENED OUT (Terminated)"
+                                : "BLOCKED (Duplicate IP)"}
                           </span>
                         </td>
                         <td className="px-4 py-2.5 text-slate-500">
@@ -817,7 +813,7 @@ function ReviewPageContent() {
               />
               <Metric
                 label="Allocated Suppliers"
-                value={routing.length.toString()}
+                value={allocations.length.toString()}
               />
               <Metric
                 label="Allocated Sample"
@@ -855,10 +851,10 @@ function ReviewPageContent() {
           </div>
         </Section>
 
-        {/* Sample Routing Allocations */}
+        {/* Automatic supplier assignments */}
         <Section
-          title="Sample Routing & Supply"
-          description="Partner supply allocation and routing distribution"
+          title="Assigned Suppliers"
+          description="Eligible suppliers are automatically assigned based on availability."
         >
           <div className="overflow-x-auto rounded-xl border border-slate-200">
             <table className="min-w-full text-left text-sm">
@@ -866,23 +862,23 @@ function ReviewPageContent() {
                 <tr>
                   <th className="px-4 py-3">Supplier</th>
                   <th className="px-4 py-3 text-right">Allocation</th>
-                  <th className="px-4 py-3 text-right">Routing %</th>
+                  <th className="px-4 py-3 text-right">Sample Share</th>
                   <th className="px-4 py-3 text-right">CPI</th>
                   <th className="px-4 py-3 text-right">Est. Spend</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {routing.length === 0 ? (
+                {allocations.length === 0 ? (
                   <tr>
                     <td
                       colSpan={5}
                       className="px-4 py-8 text-center text-slate-500"
                     >
-                      No sample routing configured.
+                      No suppliers have been assigned.
                     </td>
                   </tr>
                 ) : (
-                  routing.map((item) => (
+                  allocations.map((item) => (
                     <tr key={item._id} className="hover:bg-slate-50/50">
                       <td className="px-4 py-3.5">
                         <div className="font-semibold text-slate-900">
@@ -914,7 +910,7 @@ function ReviewPageContent() {
                   ))
                 )}
               </tbody>
-              {routing.length > 0 && (
+              {allocations.length > 0 && (
                 <tfoot className="border-t bg-slate-50 font-bold text-slate-900">
                   <tr>
                     <td className="px-4 py-3">Total</td>
@@ -956,8 +952,8 @@ function ReviewPageContent() {
               valid={checks?.surveySetup ?? false}
             />
             <Check
-              label="Sample Routing & 100% Allocation set"
-              valid={checks?.sampleRouting ?? false}
+              label="Supplier allocation complete"
+              valid={checks?.supplierAllocation ?? false}
             />
             <Check
               label="Screener & IP Anti-Fraud gatekeeper active"
@@ -977,16 +973,16 @@ function ReviewPageContent() {
         {/* Action Controls */}
         <div className="mt-8 flex flex-col-reverse justify-between gap-4 border-t border-slate-200 pt-6 sm:flex-row">
           <Link
-            href={`/project/${projectId}/sample-routing`}
+            href={`/project/${projectId}/survey-setup`}
             className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
           >
-            ← Back to Sample Routing
+            ← Back to Survey Setup
           </Link>
 
           <div className="flex items-center gap-3">
             {isLive ? (
               <Link
-                href={`/project-details/${projectId}`}
+                href={`/dashboard`}
                 className="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-7 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-emerald-500"
               >
                 Go to Live Fieldwork Dashboard →
@@ -1075,11 +1071,10 @@ function ReviewPageContent() {
                     {q.options.map((opt) => (
                       <label
                         key={opt.id}
-                        className={`flex cursor-pointer items-center justify-between rounded-lg border p-2.5 text-xs transition ${
-                          simAnswers[q.id] === opt.id
-                            ? "border-emerald-500 bg-emerald-500/10 text-white"
-                            : "border-slate-800 bg-slate-900 text-slate-300 hover:border-slate-700"
-                        }`}
+                        className={`flex cursor-pointer items-center justify-between rounded-lg border p-2.5 text-xs transition ${simAnswers[q.id] === opt.id
+                          ? "border-emerald-500 bg-emerald-500/10 text-white"
+                          : "border-slate-800 bg-slate-900 text-slate-300 hover:border-slate-700"
+                          }`}
                       >
                         <div className="flex items-center gap-2">
                           <input
@@ -1097,11 +1092,10 @@ function ReviewPageContent() {
                           <span>{opt.label}</span>
                         </div>
                         <span
-                          className={`text-[10px] font-semibold ${
-                            opt.isQualifying
-                              ? "text-emerald-400"
-                              : "text-red-400"
-                          }`}
+                          className={`text-[10px] font-semibold ${opt.isQualifying
+                            ? "text-emerald-400"
+                            : "text-red-400"
+                            }`}
                         >
                           {opt.isQualifying ? "Qualifies" : "Terminates"}
                         </span>
@@ -1152,18 +1146,17 @@ function ReviewPageContent() {
             {/* Result display */}
             {simResult.outcome && (
               <div
-                className={`mt-4 rounded-xl p-4 text-xs font-medium ${
-                  simResult.outcome === "passed"
-                    ? "border border-emerald-500/30 bg-emerald-950/40 text-emerald-200"
-                    : "border border-red-500/30 bg-red-950/40 text-red-200"
-                }`}
+                className={`mt-4 rounded-xl p-4 text-xs font-medium ${simResult.outcome === "passed"
+                  ? "border border-emerald-500/30 bg-emerald-950/40 text-emerald-200"
+                  : "border border-red-500/30 bg-red-950/40 text-red-200"
+                  }`}
               >
                 <p className="font-bold">
                   {simResult.outcome === "passed"
                     ? "✓ SCREENER PASSED"
                     : simResult.outcome === "duplicate"
-                    ? "🛡️ DUPLICATE IP BLOCKED"
-                    : "✕ SCREENER TERMINATED & IP BLACKLISTED"}
+                      ? "🛡️ DUPLICATE IP BLOCKED"
+                      : "✕ SCREENER TERMINATED & IP BLACKLISTED"}
                 </p>
                 <p className="mt-1">{simResult.message}</p>
                 {simResult.redirectUrl && (
@@ -1237,9 +1230,8 @@ function Info({
         {label}
       </p>
       <p
-        className={`mt-1 text-sm font-semibold ${
-          success ? "text-emerald-700" : "text-slate-900"
-        } ${truncate ? "truncate" : ""}`}
+        className={`mt-1 text-sm font-semibold ${success ? "text-emerald-700" : "text-slate-900"
+          } ${truncate ? "truncate" : ""}`}
       >
         {value}
       </p>
@@ -1260,10 +1252,10 @@ function Metric({
     accent === "emerald"
       ? "text-emerald-600"
       : accent === "red"
-      ? "text-red-600"
-      : accent === "amber"
-      ? "text-amber-600"
-      : "text-slate-900";
+        ? "text-red-600"
+        : accent === "amber"
+          ? "text-amber-600"
+          : "text-slate-900";
 
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
@@ -1278,23 +1270,20 @@ function Metric({
 function Check({ label, valid }: { label: string; valid: boolean }) {
   return (
     <div
-      className={`flex items-center gap-3 rounded-xl border p-4 transition ${
-        valid
-          ? "border-emerald-200 bg-emerald-50/60"
-          : "border-red-200 bg-red-50/60"
-      }`}
+      className={`flex items-center gap-3 rounded-xl border p-4 transition ${valid
+        ? "border-emerald-200 bg-emerald-50/60"
+        : "border-red-200 bg-red-50/60"
+        }`}
     >
       <div
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-          valid ? "bg-emerald-600 text-white shadow-sm" : "bg-red-500 text-white"
-        }`}
+        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${valid ? "bg-emerald-600 text-white shadow-sm" : "bg-red-500 text-white"
+          }`}
       >
         {valid ? "✓" : "!"}
       </div>
       <span
-        className={`text-xs font-semibold ${
-          valid ? "text-emerald-900" : "text-red-900"
-        }`}
+        className={`text-xs font-semibold ${valid ? "text-emerald-900" : "text-red-900"
+          }`}
       >
         {label}
       </span>

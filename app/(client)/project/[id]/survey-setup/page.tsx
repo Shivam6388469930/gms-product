@@ -295,11 +295,9 @@ function SurveySetupContent() {
         "Survey setup saved successfully."
       );
 
-      // Continue to Sample Routing
+      // Continue to review after supplier assignments are created automatically.
       setTimeout(() => {
-        router.push(
-          `/project/${projectId}/sample-routing`
-        );
+        router.push(`/project/${projectId}/review`);
       }, 500);
     } catch (err) {
       console.error(err);
@@ -364,7 +362,7 @@ function SurveySetupContent() {
     );
   }
 
-  const isDraft = project.status === "draft";
+  const canEdit = project.status !== "stopped";
 
   return (
     <main className="min-h-screen bg-white">
@@ -407,7 +405,7 @@ function SurveySetupContent() {
               <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-600">
                 Configure the survey URL, survey type,
                 redirects and qualification flow before
-                routing sample.
+                supplier assignments.
               </p>
             </div>
 
@@ -470,15 +468,14 @@ function SurveySetupContent() {
             ALERTS
         ====================================================== */}
 
-        {!isDraft && (
+        {!canEdit && (
           <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4">
             <p className="text-sm font-medium text-amber-900">
-              This project is no longer in draft status.
+              This project is stopped.
             </p>
 
             <p className="mt-1 text-sm text-amber-700">
-              Survey setup cannot be modified after the
-              project has been launched.
+              Survey setup cannot be modified on stopped projects.
             </p>
           </div>
         )}
@@ -544,7 +541,7 @@ function SurveySetupContent() {
                         "external"
                       )
                     }
-                    disabled={!isDraft}
+                    disabled={!canEdit}
                   />
 
                   <SurveyTypeCard
@@ -561,7 +558,7 @@ function SurveySetupContent() {
                         "internal"
                       )
                     }
-                    disabled={!isDraft}
+                    disabled={!canEdit}
                   />
                 </div>
               </div>
@@ -583,7 +580,7 @@ function SurveySetupContent() {
                     )
                   }
                   placeholder="https://example.com/survey"
-                  disabled={!isDraft}
+                  disabled={!canEdit}
                   className="input text-black"
                 />
               </Field>
@@ -636,7 +633,7 @@ function SurveySetupContent() {
 
           {/* Validation */}
 
-          {validationError && isDraft && (
+          {validationError && canEdit && (
             <div className="rounded-xl border border-gray-200 bg-gray-50 px-5 py-4">
               <p className="text-sm text-gray-700">
                 <span className="font-medium">
@@ -664,22 +661,10 @@ function SurveySetupContent() {
 
             <div className="flex gap-3">
               <button
-                type="button"
-                onClick={() =>
-                  router.push(
-                    `/project/${projectId}/sample-routing`
-                  )
-                }
-                className="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-800 transition hover:bg-gray-50"
-              >
-                Skip for now
-              </button>
-
-              <button
                 type="submit"
                 disabled={
                   saving ||
-                  !isDraft ||
+                  !canEdit ||
                   Boolean(validationError)
                 }
                 className="rounded-lg bg-black px-6 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"

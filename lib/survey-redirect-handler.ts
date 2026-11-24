@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import { connectDB } from "@/config/db";
 import RespondentSession from "@/models/RespondentSession";
 import Project from "@/models/Project";
+import SupplierAllocation from "@/models/SupplierAllocation";
 import {
   isRespondentPlaceholder,
   replaceRespondentPlaceholder,
@@ -758,6 +759,12 @@ export async function handleSurveyRedirect(
     }
 
     if (progressField) {
+      const currentCompletes = Number(project.progress?.completes || 0);
+      const isNowCompleted =
+        options.outcome === "complete" &&
+        project.sampleSize &&
+        currentCompletes + 1 >= Number(project.sampleSize);
+
       await Project.updateOne(
         {
           _id: project._id,
@@ -766,8 +773,34 @@ export async function handleSurveyRedirect(
           $inc: {
             [progressField]: 1,
           },
+          ...(isNowCompleted ? { $set: { status: "completed" } } : {}),
         }
       );
+    }
+
+    // Update SupplierAllocation statistics
+    const supCode = (updatedSession as any).supplierCode;
+    if (supCode) {
+      const supInc: Record<string, number> = {};
+      const cpi = Number(project.estimate?.estimatedCpi || (project as any).cpi || 2.5);
+
+      if (options.outcome === "complete") {
+        supInc.actualCompletes = 1;
+        supInc.actualSpend = cpi;
+      } else if (options.outcome === "terminate" || options.outcome === "security") {
+        supInc.actualTerminates = 1;
+      } else if (options.outcome === "quota") {
+        supInc.actualQuotaFull = 1;
+      }
+
+      if (Object.keys(supInc).length > 0) {
+        await SupplierAllocation.updateOne(
+          { project: project._id, supplierCode: supCode },
+          { $inc: supInc }
+        ).catch((allocErr) => {
+          console.warn("SupplierAllocation stats update error in redirect handler:", allocErr);
+        });
+      }
     }
 
     /* =======================================================

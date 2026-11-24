@@ -12,7 +12,7 @@ type Step = {
 };
 
 const STEPS: Step[] = [
-     {
+  {
     id: "survey",
     number: 1,
     label: "Details",
@@ -20,7 +20,7 @@ const STEPS: Step[] = [
     path: "/",
   },
 
-    {
+  {
     id: "screener",
     number: 2,
     label: "Qualification",
@@ -37,15 +37,8 @@ const STEPS: Step[] = [
   },
 
   {
-    id: "sample-routing",
-    number: 4,
-    label: "Allocation",
-    mobileLabel: "Routing",
-    path: "/sample-routing",
-  },
-  {
     id: "review",
-    number: 5,
+    number: 4,
     label: "Review & Launch",
     mobileLabel: "Review",
     path: "/review",

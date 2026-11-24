@@ -321,7 +321,7 @@ export default function DashboardPage() {
           <div>
             <div className="text-xs font-semibold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5 mb-1">
               <Layers size={13} />
-              Sample Routing Pipeline
+              Fieldwork Conversion Pipeline
             </div>
             <h2 className="text-base font-bold text-white">
               Live Fieldwork Funnel Breakdown
